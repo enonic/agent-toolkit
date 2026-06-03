@@ -51,7 +51,8 @@ approves). Never edit files before the user approves the plan — silent edits f
 ### 0. Tooling — ensure the Enonic CLI
 
 All build and deploy steps in this skill go through the **Enonic CLI** (`enonic project build`, `enonic project deploy`), not direct
-`./gradlew` invocations. Before anything else, check that the CLI is available:
+`./gradlew` invocations — for the exact syntax and flags of any `enonic` command this skill invokes (`project`, `sandbox`, `dump`),
+consult the `enonic-cli` skill. Before anything else, check that the CLI is available:
 
 ```sh
 command -v enonic && enonic version
@@ -87,7 +88,7 @@ Read these to understand the app:
 - `build.gradle` — current `com.enonic.xp.app` plugin version (pinned in XP 7, versionless in XP 8), the `app{}` block contents (XP 7 wires
   metadata here; XP 8 leaves it empty), how `com.enonic.xp:lib-*` deps are written (XP 7 long-form vs. XP 8 `xplibs.*` aliases)
 - `gradle/wrapper/gradle-wrapper.properties` — Gradle version (must be 9.x for plugin 4.x)
-- `src/main/resources/application.xml` (XP 7) or `application.yaml` (already XP 8)
+- `src/main/resources/application.xml` (XP 7) or `enonic.yaml` (already XP 8)
 - `src/main/resources/site/` — if present, this is a site app. The whole tree migrates to `cms/` (see
   `references/manual-schemes-migration.md`).
 - `src/main/resources/webapp/` — if present, includes a webapp
@@ -147,11 +148,11 @@ Detected: JS site app, xpVersion 7.9.0, plugin 3.6.2, no settings plugin, `app{}
 3. `build.gradle` — omit the `app { }` block (the verified XP 8 reference apps don't carry it). Keep `app { createDefaultDevTask = false }` only if the project registers its own custom `dev` task (e.g. an `NpmTask`).
 4. `build.gradle` — migrate Enonic library dependencies from `"com.enonic.xp:lib-X:${xpVersion}"` to `xplibs.X`.
 5. `gradle/libs.versions.toml` (new file) — extract third-party `com.enonic.lib:*` deps (e.g. `lib-thymeleaf`, `lib-xslt`, `lib-asset`, `lib-static`) into a Gradle version catalog, and reference them as `libs.<alias>` in `build.gradle`. Skip if the app has zero or one such dep.
-6. `gradle.properties` — bump `xpVersion` to the highest XP 8 version available (prefer stable; fall back to alpha/beta like `8.0.0-A3` / `8.0.0-B1`; use `-SNAPSHOT` only as a last resort, since it requires `xp.enonicRepo("dev")`). Add `projectName` if not present (used by `settings.gradle`); leave `appName`/`version`/`group` in place. The metadata fields `appDisplayName`/`vendorName`/`vendorUrl` end up in `application.yaml` in XP 8 — the migrator pipes them across when present in `gradle.properties`, and they can be removed from `gradle.properties` afterwards.
+6. `gradle.properties` — bump `xpVersion` to the highest XP 8 version available (prefer stable; fall back to alpha/beta like `8.0.0-A3` / `8.0.0-B1`; use `-SNAPSHOT` only as a last resort, since it requires `xp.enonicRepo("dev")`). Add `projectName` if not present (used by `settings.gradle`); leave `appName`/`version`/`group` in place. The metadata fields `appDisplayName`/`vendorName`/`vendorUrl` end up in `enonic.yaml` in XP 8 — the migrator pipes them across when present in `gradle.properties`, and they can be removed from `gradle.properties` afterwards.
 7. `gradle/wrapper/gradle-wrapper.properties` — bump Gradle to 9.4.1 (plugin 4.x requires Gradle 9+). Run via `./gradlew wrapper --gradle-version 9.4.1`.
 
 ### Descriptors (run xp8migrator)
-8. `src/main/resources/application.xml` → `application.yaml` (`kind: "Application"`, plus `title`/`vendorName`/`vendorUrl` imported from `gradle.properties`)
+8. `src/main/resources/application.xml` → `enonic.yaml` (`kind: "Application"`, plus `title`/`vendorName`/`vendorUrl` imported from `gradle.properties`)
 9. `src/main/resources/site/` → `src/main/resources/cms/` — the migrator splits `site.xml` between `cms/site.yaml` and `cms/cms.yaml`, moves `styles.xml` to `cms/style/style.yaml`, renames `x-data/` to `mixins/`, and converts every part/layout/page/content-type/macro to YAML with the right `kind:`. ~16 files touched.
 
 ### Validation
@@ -199,7 +200,7 @@ fixes. Keep edits minimal — don't reformat unrelated lines, don't change conte
 
 ### 5. Validate (before any deletion)
 
-Run `enonic project build` first (add `-f` to accept defaults non-interactively) — that catches descriptor-syntax errors and
+Run `enonic project build -f` first — that catches descriptor-syntax errors and
 dependency-resolution failures. The CLI drives the project's Gradle wrapper internally, so failures come back as ordinary Gradle output —
 report success or paste the first failure with its file/line. If the build fails, the original `site/` tree and `application.xml` are
 still in place, so the user can inspect them while you suggest a fix; ask before retrying.
@@ -310,7 +311,7 @@ Use the highest version that listing actually shows; it may lag the XP runtime v
 
    The settings plugin supplies the version. Pinning it at the app level conflicts with the settings plugin and is wrong for XP 8.
 
-2. **Strip the `app { }` block.** XP 7 wired metadata through it; XP 8 reads metadata from `application.yaml` (`title`, `description`,
+2. **Strip the `app { }` block.** XP 7 wired metadata through it; XP 8 reads metadata from `enonic.yaml` (`title`, `description`,
    `vendorName`, `vendorUrl`) — see the "Application descriptor" section below:
 
    ```diff
@@ -436,8 +437,8 @@ snapshot:
    <https://raw.githubusercontent.com/enonic/doc-xp/refs/heads/8.0/docs/release/upgrade.adoc>),
    but the source-level edits are the same. Add `projectName = ...` if missing — `settings.gradle` reads it. Keep `appName`, `version`,
    `group` — those are still consumed by Gradle. The metadata fields `appDisplayName`, `vendorName`, `vendorUrl` (and the legacy unprefixed
-   `displayName`) **move into `application.yaml`** in XP 8 (per the upstream upgrade guide); they can be removed from `gradle.properties`
-   afterwards. The migrator will pick them up from `gradle.properties` if it finds them there, write them into `application.yaml`, and you
+   `displayName`) **move into `enonic.yaml`** in XP 8 (per the upstream upgrade guide); they can be removed from `gradle.properties`
+   afterwards. The migrator will pick them up from `gradle.properties` if it finds them there, write them into `enonic.yaml`, and you
    can
    delete the now-redundant entries.
 
@@ -475,20 +476,20 @@ the class is in the `com.enonic.xp:testing` jar (already on the test classpath a
 
 ### Application descriptor
 
-`src/main/resources/application.xml` → `application.yaml` (handled by `xp8migrator`; XML is no longer recognized in XP 8).
+`src/main/resources/application.xml` → `enonic.yaml` (handled by `xp8migrator`; XML is no longer recognized in XP 8).
 `kind: "Application"` is mandatory — missing it fails deployment with `Invalid kind "null". Expected "Application"`. See
 `references/manual-schemes-migration.md` §6.1 for the exact field map and
 <https://raw.githubusercontent.com/enonic/doc-code/refs/heads/master/docs/upgrade.adoc> for an XP 7 → XP 8 example.
 
 **Metadata flow.** The migrator pulls `appDisplayName` / `vendorName` / `vendorUrl` from `gradle.properties` and writes them into
-`application.yaml` (as `title` / `vendorName` / `vendorUrl`). Two pre-migrator fixups in real XP 7 apps:
+`enonic.yaml` (as `title` / `vendorName` / `vendorUrl`). Two pre-migrator fixups in real XP 7 apps:
 
 1. **Unprefixed `displayName`** in `gradle.properties` — rename to `appDisplayName` (the migrator only matches the `app`-prefixed form,
    otherwise `title:` ends up empty).
 2. **Vendor info hard-coded in the `app{ }` block** of `build.gradle` — lift the literals into `gradle.properties` (or write them straight
-   into `application.yaml` post-migration; both end states are valid).
+   into `enonic.yaml` post-migration; both end states are valid).
 
-If realized after running the migrator: fix the keys and re-run `./migrator -e overwrite`, or hand-edit `application.yaml`. (Don't use `-x`
+If realized after running the migrator: fix the keys and re-run `./migrator -e overwrite`, or hand-edit `enonic.yaml`. (Don't use `-x`
 on the re-run — see the "Descriptor pass" note.)
 
 ### Admin tools
@@ -647,4 +648,5 @@ error), apply the changes documented at
   (dump/load, security, management API changes)
 - `xp-app-creator` skill — current XP 8 app structure, components, build configuration
 - `xp-app-debugger` skill — diagnose build/runtime errors after upgrade
-- `enonic-cli` skill — running `enonic dump create` / `dump load` for the data side
+- `enonic-cli` skill — full reference for every `enonic` command this skill uses (`project build`/`deploy`, `sandbox create`/`list`,
+  `dump create`/`load` for the data side)

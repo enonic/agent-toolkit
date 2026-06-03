@@ -250,15 +250,15 @@ This lets controllers and `main.ts` import like `import { getContent } from '/li
 
 ## 4. Pre-migrator fixups (tricky cases)
 
-The `xp8migrator` reads `gradle.properties` to populate `title` / `vendorName` / `vendorUrl` in the generated `application.yaml`. Two
+The `xp8migrator` reads `gradle.properties` to populate `title` / `vendorName` / `vendorUrl` in the generated `enonic.yaml`. Two
 common XP 7 source-tree shapes prevent that pipeline from working, and both must be fixed **before** running the migrator —
-otherwise `application.yaml` ends up with empty metadata and you have to rerun the migrator with `-e overwrite` or hand-edit the
+otherwise `enonic.yaml` ends up with empty metadata and you have to rerun the migrator with `-e overwrite` or hand-edit the
 result.
 
 ### 4.1 Unprefixed `displayName` in `gradle.properties`
 
 XP 7 apps sometimes use `displayName` (no prefix) instead of `appDisplayName`. The migrator only matches the prefixed form — the
-unprefixed key is silently ignored and `title:` in `application.yaml` ends up empty.
+unprefixed key is silently ignored and `title:` in `enonic.yaml` ends up empty.
 
 ```diff
  # gradle.properties — XP 7
@@ -288,7 +288,7 @@ app {
 }
 ```
 
-The migrator only reads `gradle.properties`, so these literals never reach `application.yaml`. Two valid end states; pick one
+The migrator only reads `gradle.properties`, so these literals never reach `enonic.yaml`. Two valid end states; pick one
 **before** running the migrator:
 
 **Option A — lift to `gradle.properties` (recommended; the migrator handles the rest):**
@@ -312,7 +312,7 @@ The migrator only reads `gradle.properties`, so these literals never reach `appl
 -}
 ```
 
-**Option B — skip the lift and write the values straight into `application.yaml` after the migrator runs.** Same end state, more
+**Option B — skip the lift and write the values straight into `enonic.yaml` after the migrator runs.** Same end state, more
 hand-editing. Choose this only if `gradle.properties` is generated/locked by some upstream tooling.
 
 After the lift (or the post-migration hand-edit), the `app { }` block in `build.gradle` is empty and should be removed entirely

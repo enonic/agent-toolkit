@@ -8,7 +8,7 @@ description: >
   WARN entries.
 license: MIT
 compatibility: Claude Code
-allowed-tools: Bash(tail:*) Bash(grep:*) Bash(./gradlew:*) Read Edit Grep Glob
+allowed-tools: Bash(tail:*) Bash(grep:*) Bash(./gradlew:*) Bash(enonic:*) Read Edit Grep Glob
 metadata:
   author: enonic
   xp-version: ">=7.0"
@@ -129,8 +129,11 @@ The `log` object is globally available in all XP controllers. Format strings use
 To deploy and test changes:
 
 1. Check for project-specific instructions in `CLAUDE.md`, `README.md`, or `package.json` scripts.
-2. Fall back to `./gradlew deploy` if no specific instructions exist.
-3. After deploy, tail the server log to verify: `tail -f $XP_HOME/logs/server.log`
+2. Prefer the **Enonic CLI** when it's available: `enonic project deploy` builds and deploys to the project's sandbox, and
+   `enonic sandbox list` locates the sandbox whose `home/logs/server.log` you tail below. See the `enonic-cli` skill for the full
+   command/flag reference.
+3. Fall back to `./gradlew deploy` if the CLI isn't installed and no project-specific instructions exist.
+4. After deploy, tail the server log to verify: `tail -f $XP_HOME/logs/server.log`
 
 Always ask user before deploying.
 

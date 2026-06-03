@@ -73,10 +73,11 @@ for the cross-agent writing convention used here.
 
 ## Available Skills
 
-| Skill                                                            | Description                                                                                                                                                                                   | Agent              | Category    |
-|------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|-------------|
-| [xp-app-upgrader](plugins/enonic-skills/skills/xp-app-upgrader/) | Upgrade an Enonic XP application from XP 7 to XP 8 — descriptor conversion via `xp8migrator`, build-system reorganization (settings plugin, `xplibs.*` catalog), code-level breaking changes. | Claude Code, Codex | Development |
-| [xp-app-debugger](plugins/enonic-skills/skills/xp-app-debugger/) | Debug XP application errors — build failures (Gradle, TypeScript) and server runtime errors (Nashorn/JS stack traces in `server.log`).                                                        | Claude Code        | Development |
+| Skill                                                            | Description                                                                                                                                                                                       | Agent              | Category    |
+|------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|-------------|
+| [xp-app-upgrader](plugins/enonic-skills/skills/xp-app-upgrader/) | Upgrade an Enonic XP application from XP 7 to XP 8 — descriptor conversion via `xp8migrator`, build-system reorganization (settings plugin, `xplibs.*` catalog), code-level breaking changes.     | Claude Code, Codex | Development |
+| [xp-app-debugger](plugins/enonic-skills/skills/xp-app-debugger/) | Debug XP application errors — build failures (Gradle, TypeScript) and server runtime errors (Nashorn/JS stack traces in `server.log`).                                                            | Claude Code        | Development |
+| [enonic-cli](plugins/enonic-skills/skills/enonic-cli/)           | Reference for the Enonic CLI (`enonic` command) — project creation, sandbox management, data export/import, snapshots, dumps, application lifecycle, cloud deployment, and server administration. | Claude Code, Codex | Development |
 
 ## Creating a Skill
 

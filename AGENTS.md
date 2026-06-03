@@ -12,6 +12,7 @@ plugins/
     skills/
       xp-app-upgrader/SKILL.md        # compatibility: Claude Code, Codex
       xp-app-debugger/SKILL.md        # compatibility: Claude Code
+      enonic-cli/SKILL.md             # compatibility: Claude Code, Codex
 ```
 
 Each skill is a self-contained directory with a `SKILL.md` (YAML frontmatter + Markdown instructions) and optional `references/`,

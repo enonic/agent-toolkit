@@ -47,7 +47,7 @@ Every descriptor must declare a `kind:` at the top. The value is determined by t
 
 | Path                                    | `kind:`            |
 |-----------------------------------------|--------------------|
-| `application.yaml`                      | `"Application"`    |
+| `enonic.yaml`                           | `"Application"`    |
 | `idprovider/idprovider.yaml`            | `"IdProvider"`     |
 | `apis/<name>/<name>.yaml`               | `"API"`            |
 | `services/<name>/<name>.yaml`           | `"Service"`        |
@@ -92,7 +92,7 @@ base name** (e.g. `title: "movie"` for a content type whose file is `movie.yaml`
 **Exceptions** — these descriptors do NOT get a `title` field at the top level (and any `displayName`/`<display-name>` present is preserved
 as-is):
 
-- `application.yaml`
+- `enonic.yaml`
 - `cms/cms.yaml`
 - `cms/site.yaml`
 - `idprovider/idprovider.yaml`
@@ -280,7 +280,7 @@ vendorName: "Enonic"                 # from gradle.properties vendorName
 vendorUrl: "https://enonic.com"      # from gradle.properties vendorUrl
 ```
 
-`application.yaml` does NOT receive a `title` derived from the XML's `<display-name>` — instead, the `title:` always comes from
+`enonic.yaml` does NOT receive a `title` derived from the XML's `<display-name>` — instead, the `title:` always comes from
 `appDisplayName` in `gradle.properties`.
 
 ### 6.2 `site.xml` is split between `cms/site.yaml` and `cms/cms.yaml`

@@ -10,7 +10,7 @@ description: >
   apps and for upgrades between XP 7.x minor versions.
 license: MIT
 compatibility: Claude Code, Codex
-allowed-tools: Bash(./gradlew:*) Bash(gradle:*) Bash(ls:*) Bash(find:*) Bash(grep:*) Bash(cat:*) Bash(mv:*) Bash(rm:*) Bash(curl:*) Bash(./migrator:*) Read Write Edit
+allowed-tools: Bash(enonic:*) Bash(./gradlew:*) Bash(gradle:*) Bash(ls:*) Bash(find:*) Bash(grep:*) Bash(cat:*) Bash(mv:*) Bash(rm:*) Bash(curl:*) Bash(wget:*) Bash(brew:*) Bash(npm:*) Bash(./migrator:*) Read Write Edit
 metadata:
   author: enonic
   xp-version: "7.x → 8.x"
@@ -37,15 +37,46 @@ The upgrade has two strict phases: **inventory & plan** (read-only, presented to
 approves). Never edit files before the user approves the plan — silent edits frustrate users who want to inspect the change set first.
 
 ```
+0. Tooling     → ensure the Enonic CLI is installed (install it if missing — and leave it installed)
 1. Detect      → read gradle.properties, build.gradle, app descriptor, list directories
 2. Inventory   → enumerate every file the upgrade will touch (group by category)
 3. Plan        → present a numbered checklist of changes; ask for approval
                  (descriptor changes are run via xp8migrator, not hand-edited)
 4. Execute     → run xp8migrator for descriptors; edit build/code by hand
-5. Validate    → run `./gradlew clean build` BEFORE any cleanup (so a failure leaves the originals intact for diagnosis)
+5. Validate    → run `enonic project build` BEFORE any cleanup (so a failure leaves the originals intact for diagnosis)
 6. Cleanup     → only after the build is green AND the user confirms: `rm -rf src/main/resources/site` and delete `application.xml`
-7. Deploy      → offer `./gradlew clean deploy` and run it only after the user confirms
+7. Deploy      → offer `enonic project deploy` to a sandbox and run it only after the user confirms
 ```
+
+### 0. Tooling — ensure the Enonic CLI
+
+All build and deploy steps in this skill go through the **Enonic CLI** (`enonic project build`, `enonic project deploy`), not direct
+`./gradlew` invocations. Before anything else, check that the CLI is available:
+
+```sh
+command -v enonic && enonic version
+```
+
+If it's missing, install it and **leave it installed** — it's a general-purpose Enonic dev tool, not a temporary helper like `./migrator`,
+so it must never be removed during cleanup. The go-to install method is npm — it works the same on every platform:
+
+```sh
+npm install -g @enonic/cli
+```
+
+Only if npm is unavailable, fall back to a platform-native package manager:
+
+| Platform | Fallback install command                                                                       |
+|----------|------------------------------------------------------------------------------------------------|
+| macOS    | `brew tap enonic/cli && brew install --no-quarantine enonic`                                    |
+| Linux    | `sudo snap install enonic` (or the shell installer from <https://developer.enonic.com/start>)   |
+| Windows  | `scoop bucket add enonic https://github.com/enonic/cli-scoop.git && scoop install enonic`       |
+
+Verify with `enonic version` after installing. See <https://developer.enonic.com/docs/enonic-cli/stable/install> for the full matrix.
+
+The CLI wraps the project's Gradle wrapper under the hood, so build failures still surface as Gradle output — nothing about error
+diagnosis changes. The one direct `./gradlew` call that remains in this skill is `./gradlew wrapper --gradle-version <version>` (the
+Gradle bump itself), which is a one-off configuration task the CLI has no command for.
 
 ### 1. Detect
 
@@ -124,12 +155,12 @@ Detected: JS site app, xpVersion 7.9.0, plugin 3.6.2, no settings plugin, `app{}
 9. `src/main/resources/site/` → `src/main/resources/cms/` — the migrator splits `site.xml` between `cms/site.yaml` and `cms/cms.yaml`, moves `styles.xml` to `cms/style/style.yaml`, renames `x-data/` to `mixins/`, and converts every part/layout/page/content-type/macro to YAML with the right `kind:`. ~16 files touched.
 
 ### Validation
-10. Run `./gradlew clean build` — must pass before any file deletion. If it fails, the originals in `site/` and `application.xml` are still in place for diagnosis.
+10. Run `enonic project build` — must pass before any file deletion. If it fails, the originals in `site/` and `application.xml` are still in place for diagnosis.
 
 ### Cleanup (only after the build is green)
 11. `rm -rf src/main/resources/site` and `rm src/main/resources/application.xml` — wipes both the original XML descriptors and the orphan `.js`/`.svg` siblings (the migrator copied those into `cms/`). Don't use `./migrator -x` for this — re-running the migrator on already-migrated output fails the post-migration step.
 12. If both `cms/style/style.yaml` and `cms/styles/image.yaml` exist after migration (older migrator versions emitted both), delete `cms/styles/image.yaml` — `cms/style/style.yaml` is the canonical XP 8 form.
-13. Then ask before running `./gradlew clean deploy` for a sandbox runtime check.
+13. Then ask before running `enonic project deploy <sandbox>` for a sandbox runtime check (creating an XP 8 sandbox first via `enonic sandbox create` if none exists).
 
 OK to proceed? Reply "go" to apply all, or list the numbers to skip.
 ```
@@ -151,7 +182,7 @@ post-migration step tries to move `cms/style/style.yaml` again and fails with `F
 happens via plain `rm` after the build is green (see step 5 below), not via `./migrator -x`.
 
 The migrator leaves the original `site/` tree and `application.xml` in place. Sibling `.js`, `.html`, and `.svg` files are *copied* into the
-new `cms/` location during migration. Don't delete anything yet — let `./gradlew clean build` validate the result first. If it fails, the
+new `cms/` location during migration. Don't delete anything yet — let `enonic project build` validate the result first. If it fails, the
 originals are still there for diagnosis.
 
 On Windows, use `.\migrator.exe` and the PowerShell installer (`migrator-install.ps1`). Useful flags: `-h` (help), `-a <app-name>` (override
@@ -168,13 +199,14 @@ fixes. Keep edits minimal — don't reformat unrelated lines, don't change conte
 
 ### 5. Validate (before any deletion)
 
-Run `./gradlew clean build` first — that catches descriptor-syntax errors and dependency-resolution failures. Report success or paste the
-first failure with its file/line. If the build fails, the original `site/` tree and `application.xml` are still in place, so the user can
-inspect them while you suggest a fix; ask before retrying.
+Run `enonic project build` first (add `-f` to accept defaults non-interactively) — that catches descriptor-syntax errors and
+dependency-resolution failures. The CLI drives the project's Gradle wrapper internally, so failures come back as ordinary Gradle output —
+report success or paste the first failure with its file/line. If the build fails, the original `site/` tree and `application.xml` are
+still in place, so the user can inspect them while you suggest a fix; ask before retrying.
 
 ### 6. Cleanup (only after the build is green AND the user confirms)
 
-Once `./gradlew clean build` passes, **ask the user whether to delete the originals before doing it** — don't remove anything automatically.
+Once `enonic project build` passes, **ask the user whether to delete the originals before doing it** — don't remove anything automatically.
 A green build with descriptors in both XML and YAML forms is a valid, recoverable state; once the originals are deleted the change is hard
 to reverse without git. Phrase the prompt as a yes/no question listing the exact paths, e.g. "Build passed. OK to delete
 `src/main/resources/site/`, `src/main/resources/application.xml`, and `./migrator`?"
@@ -187,6 +219,9 @@ rm src/main/resources/application.xml
 rm ./migrator                   # remove the binary too
 ```
 
+**Do NOT uninstall the Enonic CLI** during cleanup. Unlike `./migrator` (a single-purpose binary dropped into the project), the CLI is a
+machine-level developer tool — if step 0 installed it, it stays installed.
+
 The migrator already copied sibling `.js`/`.html`/`.svg` files from `site/` into `cms/`, so wiping the entire `site/` directory is safe.
 Don't use `./migrator -x` for this — running the migrator on already-migrated output fails its post-migration step.
 
@@ -195,15 +230,24 @@ If both `cms/style/style.yaml` and `cms/styles/image.yaml` exist after migration
 
 ### 7. Deploy (optional)
 
-After cleanup, **ask the user whether to deploy** — don't run it automatically. `./gradlew clean deploy` writes the JAR into a sandbox's
-hot-deploy folder, which mutates state outside the project, so it warrants explicit confirmation. Phrase it as a yes/no question, e.g. "
-Build passed. Want me to run `./gradlew clean deploy`?"
+After cleanup, **ask the user whether to deploy** — don't run it automatically. Deploying mutates state outside the project (the sandbox),
+so it warrants explicit confirmation. Phrase it as a yes/no question, e.g. "Build passed. Want me to deploy to a sandbox with
+`enonic project deploy`?"
 
-If the user says yes, run the gradle command and report only what the gradle command itself returns (success / the first failure with
-file/line). **Do not try to verify the deployment by any other means** — don't tail `server.log`, don't poke at the sandbox via `enonic`
-CLI, don't grep for the app under XP_HOME. The `deploy` task just drops the JAR in the hot-deploy folder; XP loads it asynchronously and any
-runtime load errors live in server logs that aren't this skill's responsibility. If the user wants runtime verification, hand off to the
-`xp-app-debugger` skill.
+If the user says yes, run the deployment **purely via the Enonic CLI** — no direct gradle invocations:
+
+```sh
+enonic sandbox list                          # find an existing XP 8 sandbox
+enonic sandbox create <name> -v <xpVersion> -f   # only if no suitable sandbox exists — match the app's xpVersion
+enonic project deploy <sandbox-name> -f      # builds the JAR and deploys it to the sandbox
+```
+
+The sandbox must run an XP 8 distribution matching the app's new `xpVersion` — an upgraded app deployed to a leftover XP 7 sandbox will
+fail to load. If `enonic sandbox list` shows only XP 7 sandboxes, create a fresh one rather than reusing them.
+
+Report only what the CLI commands themselves return (success / the first failure with file/line). **Do not try to verify the deployment by
+any other means** — don't tail `server.log`, don't grep for the app under XP_HOME. Runtime load errors live in server logs that aren't this
+skill's responsibility. If the user wants runtime verification beyond the CLI's own output, hand off to the `xp-app-debugger` skill.
 
 The `xp-app-debugger` skill can help interpret build/runtime errors.
 
@@ -405,7 +449,7 @@ refreshes `gradle-wrapper.jar`):
 ```
 
 **JUnit Platform launcher (Gradle 9+).** If the app has JUnit 5 tests, Gradle 9 no longer auto-resolves
-`org.junit.platform:junit-platform-launcher` onto the test runtime classpath — running `./gradlew test` fails with
+`org.junit.platform:junit-platform-launcher` onto the test runtime classpath — the test task (run as part of `enonic project build`) fails with
 `Failed to load JUnit Platform. Please ensure that all JUnit Platform dependencies are available on the test's runtime classpath, including the JUnit Platform launcher.`
 Add the launcher explicitly:
 

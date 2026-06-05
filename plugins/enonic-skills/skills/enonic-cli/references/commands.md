@@ -15,6 +15,19 @@ These flags apply to all **remote** commands (commands that talk to a running XP
 
 ---
 
+## Compatibility Mode (`--compat`)
+
+CLI 4.x talks to the **XP 8** management API by default. Four data commands accept a `--compat` flag to target a legacy **XP 7** instance:
+`snapshot create`, `snapshot restore`, `dump create`, `dump load`.
+
+| Flag       | Values                          | Effect                                                            |
+|------------|---------------------------------|-------------------------------------------------------------------|
+| `--compat` | `7` (or any value starting `7`) | Use the legacy XP 7 API format. Omit for the default XP 8 format. |
+
+The `--archive` flag on `dump create` / `dump load` is **only effective in compat mode** (XP 7).
+
+---
+
 ## Project Commands
 
 ### enonic project create
@@ -25,22 +38,22 @@ Create a new Enonic project from a starter.
 enonic project create [name] [flags]
 ```
 
-| Flag           | Short | Description                                            | Default                   |
-|----------------|-------|--------------------------------------------------------|---------------------------|
-| `--name`       | `-n`  | Project name (overrides positional arg)                | —                         |
-| `--repo`       | `-r`  | Starter repo (`<enonic>`, `<org>/<repo>`, or full URL) | —                         |
-| `--branch`     | `-b`  | Starter repo branch                                    | `master`                  |
-| `--checkout`   | `-c`  | Specific commit hash (excludes `--branch`)             | —                         |
-| `--dest`       | `-d`  | Destination folder                                     | last word of project name |
-| `--ver`        | `-v`  | Version number                                         | `1.0.0-SNAPSHOT`          |
-| `--sandbox`    | `-s`  | Link to existing sandbox                               | —                         |
-| `--prod`       | —     | Run XP in non-development mode                         | `false`                   |
-| `--skip-start` | —     | Don't start sandbox after creation                     | `false`                   |
-| `--force`      | `-f`  | Non-interactive mode                                   | `false`                   |
+| Flag            | Short            | Description                                            | Default                   |
+|-----------------|------------------|--------------------------------------------------------|---------------------------|
+| `--repository`  | `-r` OR `--repo` | Starter repo (`<enonic>`, `<org>/<repo>`, or full URL) | —                         |
+| `--branch`      | `-b`             | Branch to checkout                                     | `master`                  |
+| `--checkout`    | `-c`             | Commit hash to checkout (excludes `--branch`)          | —                         |
+| `--destination` | `-d` OR `--dest` | Destination path                                       | last word of project name |
+| `--version`     | `-v` OR `--ver`  | Version number                                         | `1.0.0-SNAPSHOT`          |
+| `--name`        | `-n`             | Application name (overrides positional arg)            | —                         |
+| `--sandbox`     | `-s` OR `--sb`   | Link to existing sandbox                               | —                         |
+| `--prod`        | —                | Run XP in non-development mode                         | `false`                   |
+| `--skip-start`  | —                | Don't start sandbox after creation                     | `false`                   |
+| `--force`       | `-f`             | Non-interactive mode                                   | `false`                   |
 
 ### enonic project sandbox
 
-Set or change the project's default sandbox.
+Set or change the project's default sandbox. Aliases: `sbox`, `sb`.
 
 ```
 enonic project sandbox [name] [-f]
@@ -104,7 +117,7 @@ enonic project deploy [sandbox-name] [flags]
 
 ### enonic project install
 
-Build and install project to a running XP instance via management API.
+Build and install project to a running XP instance via management API. Alias: `i`.
 
 ```
 enonic project install [flags]
@@ -157,15 +170,16 @@ Create a new local XP sandbox.
 enonic sandbox create [name] [flags]
 ```
 
-| Flag              | Short | Description                               | Default       |
-|-------------------|-------|-------------------------------------------|---------------|
-| `--template`      | `-t`  | Use specific template                     | —             |
-| `--skip-template` | —     | No apps preinstalled                      | `false`       |
-| `--version`       | `-v`  | XP distribution version                   | latest stable |
-| `--all`           | `-a`  | Include pre-release versions in selection | `false`       |
-| `--prod`          | —     | Non-development mode                      | `false`       |
-| `--skip-start`    | —     | Don't start after creation                | `false`       |
-| `--force`         | `-f`  | Non-interactive mode                      | `false`       |
+| Flag              | Short | Description                                             | Default       |
+|-------------------|-------|---------------------------------------------------------|---------------|
+| `--template`      | `-t`  | Use specific template                                   | —             |
+| `--skip-template` | —     | Don't use a template                                    | `false`       |
+| `--version`       | `-v`  | XP distribution version                                 | latest stable |
+| `--image`         | `-i`  | Use specific Docker image (e.g. `enonic/xp:7.13.4-sdk`) | —             |
+| `--all`           | —     | List all distro versions                                | `false`       |
+| `--prod`          | —     | Non-development mode                                    | `false`       |
+| `--skip-start`    | —     | Don't start after creation                              | `false`       |
+| `--force`         | `-f`  | Non-interactive mode                                    | `false`       |
 
 ### enonic sandbox list
 
@@ -205,21 +219,22 @@ No additional flags.
 
 ### enonic sandbox upgrade
 
-Upgrade sandbox XP distribution version. Downgrades are not allowed.
+Upgrade sandbox XP distribution version. Downgrades are not allowed. Alias: `up`.
 
 ```
 enonic sandbox upgrade [name] [flags]
 ```
 
-| Flag        | Short | Description                 | Default |
-|-------------|-------|-----------------------------|---------|
-| `--version` | `-v`  | Target distribution version | —       |
-| `--all`     | `-a`  | Show all available versions | `false` |
-| `--force`   | `-f`  | Non-interactive mode        | `false` |
+| Flag        | Short | Description                                           | Default |
+|-------------|-------|-------------------------------------------------------|---------|
+| `--version` | `-v`  | Target distribution version                           | —       |
+| `--image`   | `-i`  | New Docker image to use (e.g. `enonic/xp:7.13.4-sdk`) | —       |
+| `--all`     | `-a`  | List all distro versions                              | `false` |
+| `--force`   | `-f`  | Non-interactive mode                                  | `false` |
 
 ### enonic sandbox delete
 
-Delete sandbox and all its data.
+Delete sandbox and all its data. Aliases: `del`, `rm`.
 
 ```
 enonic sandbox delete [name] [-f]
@@ -231,7 +246,7 @@ enonic sandbox delete [name] [-f]
 
 ### enonic sandbox copy
 
-Clone an existing sandbox to a new one.
+Clone an existing sandbox to a new one. Alias: `cp`.
 
 ```
 enonic sandbox copy [source] [target] [-f]
@@ -253,11 +268,12 @@ Create a snapshot of one or all repositories.
 enonic snapshot create [flags]
 ```
 
-| Flag                  | Short | Description                    | Default |
-|-----------------------|-------|--------------------------------|---------|
-| `--repo`              | `-r`  | Repository name (omit for all) | —       |
-| + Standard auth flags |       |                                |         |
-| `--force`             | `-f`  | Non-interactive mode           | `false` |
+| Flag                  | Short | Description                                    | Default |
+|-----------------------|-------|------------------------------------------------|---------|
+| `--repo`              | `-r`  | Repository name (omit for all)                 | —       |
+| `--compat`            | —     | XP version compat mode (`7` = legacy XP 7 API) | XP 8    |
+| + Standard auth flags |       |                                                |         |
+| `--force`             | `-f`  | Non-interactive mode                           | `false` |
 
 ### enonic snapshot list
 
@@ -280,28 +296,30 @@ Restore a snapshot.
 enonic snapshot restore [flags]
 ```
 
-| Flag                  | Short | Description                     | Default |
-|-----------------------|-------|---------------------------------|---------|
-| `--snap`              | —     | Snapshot name                   | —       |
-| `--repo`              | —     | Target repository               | —       |
-| `--clean`             | —     | Delete indices before restoring | `false` |
-| + Standard auth flags |       |                                 |         |
-| `--force`             | `-f`  | Non-interactive mode            | `false` |
+| Flag                  | Short    | Description                                          | Default |
+|-----------------------|----------|------------------------------------------------------|---------|
+| `--snapshot`          | `--snap` | Snapshot name                                        | —       |
+| `--repo`              | `-r`     | Target repository                                    | —       |
+| `--latest`            | —        | Use latest snapshot (takes precedence over `--snap`) | `false` |
+| `--clean`             | —        | Delete indices before restoring                      | `false` |
+| `--compat`            | —        | XP version compat mode (`7` = legacy XP 7 API)       | XP 8    |
+| + Standard auth flags |          |                                                      |         |
+| `--force`             | `-f`     | Non-interactive mode                                 | `false` |
 
 ### enonic snapshot delete
 
-Delete snapshots by name or date.
+Delete snapshots by name or date. Alias: `del`.
 
 ```
 enonic snapshot delete [flags]
 ```
 
-| Flag                  | Short | Description                             | Default |
-|-----------------------|-------|-----------------------------------------|---------|
-| `--snap`              | —     | Snapshot name                           | —       |
-| `--before`            | `-b`  | Delete before date (format: `2 Jan 06`) | —       |
-| + Standard auth flags |       |                                         |         |
-| `--force`             | `-f`  | Non-interactive mode                    | `false` |
+| Flag                  | Short    | Description                             | Default |
+|-----------------------|----------|-----------------------------------------|---------|
+| `--snapshot`          | `--snap` | Snapshot name                           | —       |
+| `--before`            | `-b`     | Delete before date (format: `2 Jan 06`) | —       |
+| + Standard auth flags |          |                                         |         |
+| `--force`             | `-f`     | Non-interactive mode                    | `false` |
 
 ---
 
@@ -315,19 +333,20 @@ Export all repositories to a dump.
 enonic dump create [flags]
 ```
 
-| Flag                  | Short | Description                     | Default |
-|-----------------------|-------|---------------------------------|---------|
-| `--name`              | `-d`  | Dump name                       | —       |
-| `--skip-versions`     | —     | Don't include version history   | `false` |
-| `--max-version-age`   | —     | Max age of versions in days     | —       |
-| `--max-versions`      | —     | Max number of versions per node | —       |
-| `--archive`           | —     | Create as ZIP archive           | `false` |
-| + Standard auth flags |       |                                 |         |
-| `--force`             | `-f`  | Non-interactive mode            | `false` |
+| Flag                  | Short | Description                                      | Default |
+|-----------------------|-------|--------------------------------------------------|---------|
+| `-d`                  | —     | Dump name                                        | —       |
+| `--skip-versions`     | —     | Don't include version history                    | `false` |
+| `--max-version-age`   | —     | Max age of versions in days                      | —       |
+| `--max-versions`      | —     | Max number of versions per node                  | —       |
+| `--archive`           | —     | Create as ZIP archive (only in compat/XP 7 mode) | `false` |
+| `--compat`            | —     | XP version compat mode (`7` = legacy XP 7 API)   | XP 8    |
+| + Standard auth flags |       |                                                  |         |
+| `--force`             | `-f`  | Non-interactive mode                             | `false` |
 
 ### enonic dump upgrade
 
-Upgrade dump format for newer XP version.
+Upgrade dump format for newer XP version. Alias: `up`.
 
 ```
 enonic dump upgrade [flags]
@@ -335,7 +354,7 @@ enonic dump upgrade [flags]
 
 | Flag                  | Short | Description          | Default |
 |-----------------------|-------|----------------------|---------|
-| `--name`              | `-d`  | Dump name            | —       |
+| `-d`                  | —     | Dump name            | —       |
 | + Standard auth flags |       |                      |         |
 | `--force`             | `-f`  | Non-interactive mode | `false` |
 
@@ -362,13 +381,14 @@ Import a dump. Deletes existing repos before loading.
 enonic dump load [flags]
 ```
 
-| Flag                  | Short | Description                               | Default |
-|-----------------------|-------|-------------------------------------------|---------|
-| `--name`              | `-d`  | Dump name                                 | —       |
-| `--upgrade`           | —     | Automatically upgrade dump before loading | `false` |
-| `--archive`           | —     | Load from ZIP archive                     | `false` |
-| + Standard auth flags |       |                                           |         |
-| `--force`             | `-f`  | Non-interactive mode                      | `false` |
+| Flag                  | Short | Description                                      | Default |
+|-----------------------|-------|--------------------------------------------------|---------|
+| `-d`                  | —     | Dump name                                        | —       |
+| `--upgrade`           | —     | Automatically upgrade dump before loading        | `false` |
+| `--archive`           | —     | Load from ZIP archive (only in compat/XP 7 mode) | `false` |
+| `--compat`            | —     | XP version compat mode (`7` = legacy XP 7 API)   | XP 8    |
+| + Standard auth flags |       |                                                  |         |
+| `--force`             | `-f`  | Non-interactive mode                             | `false` |
 
 ---
 
@@ -384,7 +404,7 @@ enonic export [flags]
 
 | Flag                  | Short | Description                           | Default |
 |-----------------------|-------|---------------------------------------|---------|
-| `--target`            | `-t`  | Export name                           | —       |
+| `-t`                  | —     | Export name                           | —       |
 | `--path`              | —     | Source path (`repo:branch:path`)      | —       |
 | `--skip-ids`          | —     | Don't export node IDs                 | `false` |
 | `--skip-versions`     | —     | Don't export version history          | `false` |
@@ -402,7 +422,7 @@ enonic import [flags]
 
 | Flag                  | Short | Description                      | Default |
 |-----------------------|-------|----------------------------------|---------|
-| `--target`            | `-t`  | Export name to import from       | —       |
+| `-t`                  | —     | Export name to import from       | —       |
 | `--path`              | —     | Target path (`repo:branch:path`) | —       |
 | `--xsl-source`        | —     | XSL transformation file          | —       |
 | `--xsl-param`         | —     | XSL parameters (`key=value`)     | —       |
@@ -418,7 +438,7 @@ enonic import [flags]
 
 ### enonic app install
 
-Install an application on all cluster nodes.
+Install an application on all cluster nodes. Alias: `i`.
 
 ```
 enonic app install [flags]
@@ -471,9 +491,9 @@ enonic repo reindex [flags]
 
 | Flag                  | Short | Description                            | Default |
 |-----------------------|-------|----------------------------------------|---------|
-| `--branches`          | `-b`  | Comma-separated branch list            | —       |
-| `--repo`              | `-r`  | Repository name                        | —       |
-| `--initialize`        | `-i`  | Recreate index data (delete + reindex) | `false` |
+| `-b`                  | —     | Comma-separated branch list            | —       |
+| `-r`                  | —     | Repository name                        | —       |
+| `-i`                  | —     | Recreate index data (delete + reindex) | `false` |
 | + Standard auth flags |       |                                        |         |
 | `--force`             | `-f`  | Non-interactive mode                   | `false` |
 
@@ -485,11 +505,11 @@ Toggle read-only mode.
 enonic repo readonly <true|false> [flags]
 ```
 
-| Flag                  | Short | Description                          | Default |
-|-----------------------|-------|--------------------------------------|---------|
-| `--repo`              | `-r`  | Repository name (omit for all repos) | —       |
-| + Standard auth flags |       |                                      |         |
-| `--force`             | `-f`  | Non-interactive mode                 | `false` |
+| Flag                  | Short | Description                            | Default |
+|-----------------------|-------|----------------------------------------|---------|
+| `-r`                  | —     | Single repository (omit for all repos) | —       |
+| + Standard auth flags |       |                                        |         |
+| `--force`             | `-f`  | Non-interactive mode                   | `false` |
 
 ### enonic repo replicas
 
@@ -542,13 +562,14 @@ enonic cms reprocess [flags]
 
 ### enonic system info
 
-Show XP instance info (version, mode, build hash, branch, timestamp).
+Show XP instance info (version, mode, build hash, branch, timestamp). Alias: `i`.
 
 ```
-enonic system info
+enonic system info [flags]
 ```
 
-No auth required — uses the info port (2609).
+Accepts `--force` and the standard auth flags. Earlier CLI versions required no auth (info port 2609); 4.0.0 added the auth flags — pass
+them if the management API is secured.
 
 ---
 
@@ -596,12 +617,12 @@ enonic vacuum [flags]
 Login to Enonic Cloud via browser-based OAuth.
 
 ```
-enonic cloud login [-qr]
+enonic cloud login [--qr]
 ```
 
-| Flag  | Short | Description                     | Default |
-|-------|-------|---------------------------------|---------|
-| `-qr` | —     | Display QR code for mobile auth | `false` |
+| Flag   | Short | Description                     | Default |
+|--------|-------|---------------------------------|---------|
+| `--qr` | —     | Display QR code for mobile auth | `false` |
 
 **Note:** This is interactive (browser-based). `-f` does not apply.
 
@@ -641,20 +662,20 @@ Simplified project creation with defaults.
 enonic create [project-name] [flags]
 ```
 
-| Flag           | Short | Description          | Default |
-|----------------|-------|----------------------|---------|
-| `--repo`       | `-r`  | Starter repo path    | —       |
-| `--sandbox`    | `-s`  | Link to sandbox      | —       |
-| `--prod`       | —     | Non-development mode | `false` |
-| `--skip-start` | —     | Don't start sandbox  | `false` |
-| `--force`      | `-f`  | Non-interactive mode | `false` |
+| Flag           | Short            | Description          | Default |
+|----------------|------------------|----------------------|---------|
+| `--repository` | `-r` OR `--repo` | Starter repo path    | —       |
+| `--sandbox`    | `-s` OR `--sb`   | Link to sandbox      | —       |
+| `--prod`       | —                | Non-development mode | `false` |
+| `--skip-start` | —                | Don't start sandbox  | `false` |
+| `--force`      | `-f`             | Non-interactive mode | `false` |
 
 ### enonic dev
 
-Start hot-reload development mode.
+Start hot-reload development mode. Alias for `enonic project dev`.
 
 ```
-enonic dev
+enonic dev [-f]
 ```
 
 Starts sandbox in detached mode, deploys app, watches for changes. Exit with Ctrl-C.
@@ -664,8 +685,10 @@ Starts sandbox in detached mode, deploys app, watches for changes. Exit with Ctr
 Show the latest available CLI version.
 
 ```
-enonic latest
+enonic latest [flags]
 ```
+
+Accepts `--force` and the standard auth flags, though it only checks the CLI version.
 
 ### enonic upgrade
 

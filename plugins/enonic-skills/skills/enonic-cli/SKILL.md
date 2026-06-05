@@ -11,7 +11,7 @@ compatibility: Claude Code, Codex
 allowed-tools: Bash(enonic:*) Read
 metadata:
   author: enonic
-  cli-version: "3.4.0"
+  cli-version: "4.0.0"
 ---
 
 ## Critical Rules
@@ -20,12 +20,14 @@ metadata:
    automation. The only exception is `enonic cloud login` (browser-based OAuth).
 
 2. **Local vs remote commands:**
-    - **Local commands** run against files on disk — no auth needed: `project *`, `sandbox *`, `create`, `dev`, `latest`, `upgrade`,
-      `uninstall`.
-    - **Remote commands** talk to a running XP instance via management API — auth required: `snapshot *`, `dump *`, `export`, `import`,
-      `app *`, `repo *`, `cms *`, `auditlog *`, `vacuum`.
-    - `system info` uses the info port (2609) — no auth.
+    - **Local commands** run against files on disk — no auth needed: `project *` (except `install`), `sandbox *`, `create`, `dev`.
+    - **Remote commands** talk to a running XP instance via the management API — accept auth flags: `snapshot *`, `dump *`, `export`,
+      `import`, `app *`, `repo *`, `cms *`, `system info`, `auditlog *`, `vacuum`. (`system info` needed no auth before 4.0.0; it now
+      accepts
+      the standard auth flags.)
     - `project install` is a local build + remote install hybrid — auth required.
+    - **Maintenance commands** (`latest`, `upgrade`, `uninstall`) manage the CLI itself; `latest` also accepts auth flags but only checks
+      the CLI version.
 
 3. **Management port is 4848, not 8080.** The CLI talks to the management API on port 4848. Port 8080 is the web/content API. Never use 8080
    for CLI remote operations.
@@ -34,12 +36,16 @@ metadata:
    and `dev` use this automatically.
 
 5. **Command aliases:**
-    - `enonic create` = simplified `enonic project create`
-    - `enonic dev` = `enonic project dev`
-    - `sandbox ls` = `sandbox list`
-    - `dump ls` = `dump list`
-    - `snapshot ls` = `snapshot list`
-    - `repo ls` = `repo list`
+    - `enonic create` = simplified `enonic project create`; `enonic dev` = `enonic project dev`
+    - `project sandbox` → `sbox`, `sb`; `project install` → `i`
+    - `sandbox list` → `ls`; `sandbox delete` → `del`, `rm`; `sandbox upgrade` → `up`; `sandbox copy` → `cp`
+    - `snapshot list` → `ls`; `snapshot delete` → `del`
+    - `dump list` → `ls`; `dump upgrade` → `up`
+    - `app install` → `i`; `repo list` → `ls`; `system info` → `i`
+
+6. **XP 8 API format is the default (CLI 4.x).** `snapshot create/restore` and `dump create/load` use the XP 8 management API format by
+   default. Add `--compat 7` (any value starting with `7`) to target a legacy XP 7 instance. The `--archive` flag on `dump create/load` is
+   only effective in compat mode (XP 7).
 
 ## Command Syntax
 
@@ -95,15 +101,15 @@ All run from the project root directory.
 
 ## Sandbox Commands
 
-| Command                    | Description                       | Key flags                                                                    |
-|----------------------------|-----------------------------------|------------------------------------------------------------------------------|
-| `sandbox create [name]`    | Create new sandbox                | `-v <version>`, `-t <template>`, `--skip-template`, `--prod`, `--skip-start` |
-| `sandbox list`             | List all sandboxes                | —                                                                            |
-| `sandbox start [name]`     | Start sandbox                     | `--prod`, `--debug`, `-d` (detach), `--http.port <port>`                     |
-| `sandbox stop`             | Stop running sandbox              | —                                                                            |
-| `sandbox upgrade [name]`   | Upgrade XP version (no downgrade) | `-v <version>`                                                               |
-| `sandbox delete [name]`    | Delete sandbox and data           | —                                                                            |
-| `sandbox copy [src] [dst]` | Clone sandbox                     | —                                                                            |
+| Command                    | Description                       | Key flags                                                                                                  |
+|----------------------------|-----------------------------------|------------------------------------------------------------------------------------------------------------|
+| `sandbox create [name]`    | Create new sandbox                | `-v <version>`, `-t <template>`, `--skip-template`, `-i <docker-image>`, `--all`, `--prod`, `--skip-start` |
+| `sandbox list`             | List all sandboxes                | —                                                                                                          |
+| `sandbox start [name]`     | Start sandbox                     | `--prod`, `--debug`, `-d` (detach), `--http.port <port>`                                                   |
+| `sandbox stop`             | Stop running sandbox              | —                                                                                                          |
+| `sandbox upgrade [name]`   | Upgrade XP version (no downgrade) | `-v <version>`, `-i <docker-image>`, `-a`/`--all`                                                          |
+| `sandbox delete [name]`    | Delete sandbox and data           | —                                                                                                          |
+| `sandbox copy [src] [dst]` | Clone sandbox                     | —                                                                                                          |
 
 Only one sandbox can run at a time. Default start mode is development.
 
@@ -125,23 +131,23 @@ enonic import -t <name> --path <repo:branch:path> -f
 
 ### Snapshots
 
-| Command            | Key flags                                   | Notes                           |
-|--------------------|---------------------------------------------|---------------------------------|
-| `snapshot create`  | `-r <repo>` (omit for all)                  | Online operation, no downtime   |
-| `snapshot ls`      | —                                           | Shows all snapshots with status |
-| `snapshot restore` | `--snap <name>`, `--repo <name>`, `--clean` | `--clean` deletes indices first |
-| `snapshot delete`  | `--snap <name>`, `-b <date>`                | Date format: `2 Jan 06`         |
+| Command            | Key flags                                                         | Notes                                                          |
+|--------------------|-------------------------------------------------------------------|----------------------------------------------------------------|
+| `snapshot create`  | `-r <repo>` (omit for all), `--compat 7`                          | Online operation, no downtime                                  |
+| `snapshot ls`      | —                                                                 | Shows all snapshots with status                                |
+| `snapshot restore` | `--snap <name>`, `-r <repo>`, `--latest`, `--clean`, `--compat 7` | `--latest` overrides `--snap`; `--clean` deletes indices first |
+| `snapshot delete`  | `--snap <name>`, `-b <date>`                                      | Date format: `2 Jan 06`                                        |
 
 All snapshot commands require auth.
 
 ### Dumps
 
-| Command        | Key flags                                                                                     | Notes                                     |
-|----------------|-----------------------------------------------------------------------------------------------|-------------------------------------------|
-| `dump create`  | `-d <name>`, `--skip-versions`, `--max-version-age <days>`, `--max-versions <n>`, `--archive` | Full system export                        |
-| `dump upgrade` | `-d <name>`                                                                                   | Output: `<name>_upgraded_<version>`       |
-| `dump ls`      | —                                                                                             | List all dumps                            |
-| `dump load`    | `-d <name>`, `--upgrade`, `--archive`                                                         | **Deletes existing repos** before loading |
+| Command        | Key flags                                                                                                   | Notes                                                                         |
+|----------------|-------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
+| `dump create`  | `-d <name>`, `--skip-versions`, `--max-version-age <days>`, `--max-versions <n>`, `--archive`, `--compat 7` | Full system export. `--archive` only effective with `--compat 7`              |
+| `dump upgrade` | `-d <name>`                                                                                                 | Output: `<name>_upgraded_<version>`                                           |
+| `dump ls`      | —                                                                                                           | List all dumps                                                                |
+| `dump load`    | `-d <name>`, `--upgrade`, `--archive`, `--compat 7`                                                         | **Deletes existing repos** before loading. `--archive` only with `--compat 7` |
 
 All dump commands require auth. Dumps are stored in `$XP_HOME/data/dump/`.
 
@@ -176,9 +182,9 @@ Typically used after content migration. Path format is `branch:path` (no repo pr
 
 ### System
 
-| Command       | Description           | Notes                               |
-|---------------|-----------------------|-------------------------------------|
-| `system info` | Show XP instance info | Uses info port 2609, no auth needed |
+| Command       | Description           | Notes                                                       |
+|---------------|-----------------------|-------------------------------------------------------------|
+| `system info` | Show XP instance info | Accepts the standard auth flags (use them if XP is secured) |
 
 ### Audit Log
 
@@ -199,7 +205,7 @@ older than the threshold.
 
 | Command             | Description             | Notes                                                                                |
 |---------------------|-------------------------|--------------------------------------------------------------------------------------|
-| `cloud login`       | Login via browser OAuth | **Interactive — no `-f` flag.** Supports `-qr` for mobile.                           |
+| `cloud login`       | Login via browser OAuth | **Interactive — no `-f` flag.** Supports `--qr` for mobile.                          |
 | `cloud logout`      | Log out                 | —                                                                                    |
 | `cloud app install` | Install JAR to cloud    | `-j <jar-path>` (default: `./build/libs/*.jar`), `-t <timeout>`, `-y` (skip confirm) |
 

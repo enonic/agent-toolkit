@@ -10,7 +10,7 @@ description: >
   apps and for upgrades between XP 7.x minor versions.
 license: MIT
 compatibility: Claude Code, Codex
-allowed-tools: Bash(enonic:*) Bash(./gradlew:*) Bash(gradle:*) Bash(ls:*) Bash(find:*) Bash(grep:*) Bash(cat:*) Bash(mv:*) Bash(rm:*) Bash(curl:*) Bash(wget:*) Bash(brew:*) Bash(npm:*) Bash(./migrator:*) Read Write Edit
+allowed-tools: Bash(command -v enonic) Bash(enonic:*) Bash(./gradlew:*) Bash(gradle:*) Bash(ls:*) Bash(find:*) Bash(grep:*) Bash(cat:*) Bash(mv:*) Bash(rm:*) Bash(curl:*) Bash(wget:*) Bash(brew:*) Bash(npm:*) Bash(./migrator:*) WebFetch(domain:raw.githubusercontent.com) WebFetch(domain:repo.enonic.com) Read Write Edit
 metadata:
   author: enonic
   xp-version: "7.x → 8.x"
@@ -31,35 +31,22 @@ Enonic upgrade guide (source of truth for descriptor shapes and breaking-change 
 full set of transformations the migrator performs, and `references/examples.md` for the full `xplibs.*` alias tables, worked `build.gradle`
 examples, and TypeScript wiring.
 
-## Workflow (must follow in order)
+## The Enonic CLI
 
-The upgrade has two strict phases: **inventory & plan** (read-only, presented to the user), then **execute & validate** (only after the user
-approves). Never edit files before the user approves the plan — silent edits frustrate users who want to inspect the change set first.
-
-```
-0. Tooling     → ensure the Enonic CLI is installed (install it if missing — and leave it installed)
-1. Detect      → read gradle.properties, build.gradle, app descriptor, list directories
-2. Inventory   → enumerate every file the upgrade will touch (group by category)
-3. Plan        → present a numbered checklist of changes; ask for approval
-                 (descriptor changes are run via xp8migrator, not hand-edited)
-4. Execute     → run xp8migrator for descriptors; edit build/code by hand
-5. Validate    → run `enonic project build` BEFORE any cleanup (so a failure leaves the originals intact for diagnosis)
-6. Cleanup     → only after the build is green AND the user confirms: `rm -rf src/main/resources/site` and delete `application.xml`
-7. Deploy      → offer `enonic project deploy` to a sandbox and run it only after the user confirms
-```
-
-### 0. Tooling — ensure the Enonic CLI
+> **REQUIRED SUB-SKILL — `enonic-cli`.** Whenever you need to run *any* `enonic` command (`project build`/`deploy`,
+> `sandbox create`/`list`/`start`/`stop`, `dump`, …), **invoke the `enonic-cli` skill first** for the authoritative, current command and
+> flag reference. Don't reconstruct `enonic` syntax from memory or from this skill alone — the commands and flags shown here are
+> illustrative and can drift between CLI versions.
 
 All build and deploy steps in this skill go through the **Enonic CLI** (`enonic project build`, `enonic project deploy`), not direct
-`./gradlew` invocations — for the exact syntax and flags of any `enonic` command this skill invokes (`project`, `sandbox`, `dump`),
-consult the `enonic-cli` skill. Before anything else, check that the CLI is available:
+`./gradlew` invocations. The CLI wraps the project's Gradle wrapper under the hood, so build failures still surface as Gradle output —
+nothing about error diagnosis changes. The one direct `./gradlew` call that remains in this skill is
+`./gradlew wrapper --gradle-version <version>` (the Gradle bump itself), which is a one-off configuration task the CLI has no command for.
 
-```sh
-command -v enonic && enonic version
-```
-
-If it's missing, install it and **leave it installed** — it's a general-purpose Enonic dev tool, not a temporary helper like `./migrator`,
-so it must never be removed during cleanup. The go-to install method is npm — it works the same on every platform:
+The CLI is a machine-level developer tool, not a per-project helper — **so don't install it up front.** Checking whether it's present is
+part of **Detect** (step 1, read-only); if it's missing, *installing it* is a line item in the **Plan** (step 3) the user approves, and
+the install runs in **Execute** (step 4) — never silently before the plan is approved. Once installed it **stays installed** (never
+removed during cleanup, unlike `./migrator`). The go-to install is npm — same on every platform:
 
 ```sh
 npm install -g @enonic/cli
@@ -67,21 +54,64 @@ npm install -g @enonic/cli
 
 Only if npm is unavailable, fall back to a platform-native package manager:
 
-| Platform | Fallback install command                                                                       |
-|----------|------------------------------------------------------------------------------------------------|
-| macOS    | `brew tap enonic/cli && brew install --no-quarantine enonic`                                    |
-| Linux    | `sudo snap install enonic` (or the shell installer from <https://developer.enonic.com/start>)   |
-| Windows  | `scoop bucket add enonic https://github.com/enonic/cli-scoop.git && scoop install enonic`       |
+| Platform | Fallback install command                                                                      |
+|----------|-----------------------------------------------------------------------------------------------|
+| macOS    | `brew tap enonic/cli && brew install --no-quarantine enonic`                                  |
+| Linux    | `sudo snap install enonic` (or the shell installer from <https://developer.enonic.com/start>) |
+| Windows  | `scoop bucket add enonic https://github.com/enonic/cli-scoop.git && scoop install enonic`     |
 
-Verify with `enonic version` after installing. See <https://developer.enonic.com/docs/enonic-cli/stable/install> for the full matrix.
+Verify with `enonic --version` after installing. See <https://developer.enonic.com/docs/enonic-cli/stable/install> for the full matrix.
 
-The CLI wraps the project's Gradle wrapper under the hood, so build failures still surface as Gradle output — nothing about error
-diagnosis changes. The one direct `./gradlew` call that remains in this skill is `./gradlew wrapper --gradle-version <version>` (the
-Gradle bump itself), which is a one-off configuration task the CLI has no command for.
+### Running the Enonic CLI non-interactively (without deciding for the user)
+
+Every `enonic` command in this skill (`project build`, `project deploy`, `sandbox create`, `sandbox start`) is **interactive by default** —
+it prompts on a TTY. The agent shell has no TTY, so an un-flagged command hangs waiting on stdin, and the `--force` / `-f` flag
+**silently accepts the default answer to every prompt** — which means the CLI, not you and not the user, picks the sandbox, the distro
+version, and whether to boot a server. That is how a deploy ends up on the wrong sandbox, or attached to a long-running foreground XP
+server that hangs the whole session.
+
+The rule: **run the CLI non-interactively, but never let `-f` make a choice the user would want to make.** Before any command that would
+prompt for a consequential value, work out what it would ask, surface those questions to the user (an `AskUserQuestion`-style choice in
+Claude Code), then run it non-interactively with the answers passed as **explicit flags** — using `-f` only to suppress prompts whose
+answers you have already pinned. `-f` means "don't ask me"; only reach for it once you (with the user) have answered everything it would
+have asked. Per command:
+
+- **`enonic project build -f`** — fine to run with `-f` directly. Its only prompt ("build without a sandbox?") has a harmless default.
+- **`enonic sandbox create`** — prompts for distro version and template. Confirm the version with the user (it must match the app's
+  `xpVersion`) and pass both explicitly, using the **Essentials** template: `enonic sandbox create <name> -v <xpVersion> -t essentials -f`.
+- **`enonic project deploy <sandbox>`** — has two consequential prompts: *which sandbox* and *start it now?*. Always name the sandbox
+  explicitly (never let `-f` choose — see step 7). Starting the sandbox launches a **long-running foreground XP server** that will hang the
+  agent shell, so settle the start behaviour with the user first: `--skip-start` to only stage the JAR into a sandbox they will start
+  themselves, or run the start detached / in the background (`run_in_background` in Claude Code) when they want a live runtime to inspect.
+
+## Workflow (must follow in order)
+
+The upgrade has two strict phases: **inventory & plan** (read-only, presented to the user), then **execute & validate** (only after the user
+approves). Never edit files before the user approves the plan — silent edits frustrate users who want to inspect the change set first.
+Throughout both phases, **announce before you act**: before each step that runs a command or edits a file, say in one line what you're
+about to do and why, so the user always knows what's happening without having to ask.
+
+```
+1. Detect      → check the Enonic CLI is present (read-only); read gradle.properties, build.gradle, app descriptor, list directories
+2. Inventory   → enumerate every file the upgrade will touch (group by category)
+3. Plan        → present a numbered checklist of changes (incl. installing the Enonic CLI if it's missing); ask for approval
+                 (descriptor changes are run via xp8migrator, not hand-edited)
+4. Execute     → install the CLI if the plan said so; run xp8migrator for descriptors; edit build/code by hand
+5. Validate    → run `enonic project build` BEFORE any cleanup (so a failure leaves the originals intact for diagnosis)
+6. Cleanup     → only after the build is green AND the user confirms: `rm -rf src/main/resources/site` and delete `application.xml`
+7. Deploy      → offer `enonic project deploy` to a sandbox and run it only after the user confirms
+```
 
 ### 1. Detect
 
-Read these to understand the app:
+First, **check the Enonic CLI is present** — read-only, install nothing yet:
+
+```sh
+command -v enonic && enonic --version
+```
+
+If it's absent, note it for the Plan (step 3) — installing it is a plan item, not something you do here (see "The Enonic CLI" above).
+Then read these to understand the app:
 
 - `gradle.properties` — current `xpVersion`, `appName`, `appDisplayName`, `vendorName`, `vendorUrl`, `projectName`, `version`
 - `settings.gradle` — does it declare `com.enonic.xp.settings`? If absent, the upgrade adds it (this plugin is the central XP 8 plumbing)
@@ -135,20 +165,27 @@ The user can grant approval up-front in the same turn as the original request (e
 whatever it takes"). Treat that as approval — show the plan and proceed straight into execution. Pause for a fresh confirmation only when
 the request was open-ended ("what do I need to change?", "can you upgrade this?") without an explicit "go ahead".
 
+If Detect found the Enonic CLI missing, make **installing it the first plan item** (`npm install -g @enonic/cli`, or a platform fallback
+from "The Enonic CLI" above) — it's needed for the Validate and Deploy steps. Present it for approval like any other change; don't
+pre-install it.
+
 Example shape:
 
 ```
 ## XP 7 → XP 8 upgrade plan for <app-name>
 
-Detected: JS site app, xpVersion 7.9.0, plugin 3.6.2, no settings plugin, `app{}` block has explicit name/displayName/vendor wiring, dependencies use long-form `com.enonic.xp:lib-*:${xpVersion}` coordinates, Gradle wrapper 8.5, no admin tools.
+Detected: JS site app, xpVersion 7.9.0, plugin 3.6.2, no settings plugin, `app{}` block has explicit name/displayName/vendor wiring, dependencies use long-form `com.enonic.xp:lib-*:${xpVersion}` coordinates, Gradle wrapper 8.5, no admin tools. Enonic CLI not found on PATH.
+
+### Tooling (only if the Enonic CLI is missing)
+0. Install the Enonic CLI — `npm install -g @enonic/cli` (or a platform fallback). Required for `enonic project build`/`deploy`; it's a machine-level dev tool that stays installed afterward.
 
 ### Build system (settings plugin + catalog)
 1. `settings.gradle` — add the XP 8 settings plugin: `id("com.enonic.xp.settings") version "<latest>"`. This is the centerpiece of the XP 8 build; it supplies the `com.enonic.xp.app` plugin version and the `xplibs.*` catalog. Pick the latest released version (alpha/beta releases like `4.0.0-A3` / `4.0.0-B1` are fine — do not use `-SNAPSHOT`).
 2. `build.gradle` — drop the `version '3.6.2'` pin from `id 'com.enonic.xp.app'`; in XP 8 the version is supplied by the settings plugin.
-3. `build.gradle` — omit the `app { }` block (the verified XP 8 reference apps don't carry it). Keep `app { createDefaultDevTask = false }` only if the project registers its own custom `dev` task (e.g. an `NpmTask`).
-4. `build.gradle` — migrate Enonic library dependencies from `"com.enonic.xp:lib-X:${xpVersion}"` to `xplibs.X`.
+3. `build.gradle` — omit the `app { }` block (the verified XP 8 reference apps don't carry it). Keep `app { createDefaultDevTask = false }` only if the project's `dev` task differs from the plugin default (which runs `deploy --continuous -Penv=dev`) — e.g. a real `NpmTask` watch. If the existing `dev` task just reproduces the default, drop it and use the auto-registered one (see "Build files").
+4. `build.gradle` — migrate Enonic library dependencies from `"com.enonic.xp:lib-X:${xpVersion}"` to `xplibs.X`. **Pure 1:1 rename — migrate every `include` as-is; never drop one as "unused" (XP `include`s aren't transitive, so app-source greps can't prove a dep unused; pruning is out of scope — see "Build files").**
 5. `gradle/libs.versions.toml` (new file) — extract third-party `com.enonic.lib:*` deps (e.g. `lib-thymeleaf`, `lib-xslt`, `lib-asset`, `lib-static`) into a Gradle version catalog, and reference them as `libs.<alias>` in `build.gradle`. Skip if the app has zero or one such dep.
-6. `gradle.properties` — bump `xpVersion` to the highest XP 8 version available (prefer stable; fall back to alpha/beta like `8.0.0-A3` / `8.0.0-B1`; use `-SNAPSHOT` only as a last resort, since it requires `xp.enonicRepo("dev")`). Add `projectName` if not present (used by `settings.gradle`); leave `appName`/`version`/`group` in place. The metadata fields `appDisplayName`/`vendorName`/`vendorUrl` end up in `enonic.yaml` in XP 8 — the migrator pipes them across when present in `gradle.properties`, and they can be removed from `gradle.properties` afterwards.
+6. `gradle.properties` — bump `xpVersion` to the highest XP 8 version available (prefer stable; fall back to alpha/beta like `8.0.0-A3` / `8.0.0-B1`; `-SNAPSHOT` only as a last resort). Add `projectName` if missing (used by `settings.gradle`); leave `appName`/`version`/`group` in place. Display/vendor metadata moves to `enonic.yaml` (see *Application descriptor*).
 7. `gradle/wrapper/gradle-wrapper.properties` — bump Gradle to 9.4.1 (plugin 4.x requires Gradle 9+). Run via `./gradlew wrapper --gradle-version 9.4.1`.
 
 ### Descriptors (run xp8migrator)
@@ -156,17 +193,20 @@ Detected: JS site app, xpVersion 7.9.0, plugin 3.6.2, no settings plugin, `app{}
 9. `src/main/resources/site/` → `src/main/resources/cms/` — the migrator splits `site.xml` between `cms/site.yaml` and `cms/cms.yaml`, moves `styles.xml` to `cms/style/style.yaml`, renames `x-data/` to `mixins/`, and converts every part/layout/page/content-type/macro to YAML with the right `kind:`. ~16 files touched.
 
 ### Validation
-10. Run `enonic project build` — must pass before any file deletion. If it fails, the originals in `site/` and `application.xml` are still in place for diagnosis.
+10. Run `enonic project build -f` — must pass before any file deletion. If it fails, the originals in `site/` and `application.xml` are still in place for diagnosis.
 
 ### Cleanup (only after the build is green)
-11. `rm -rf src/main/resources/site` and `rm src/main/resources/application.xml` — wipes both the original XML descriptors and the orphan `.js`/`.svg` siblings (the migrator copied those into `cms/`). Don't use `./migrator -x` for this — re-running the migrator on already-migrated output fails the post-migration step.
-12. If both `cms/style/style.yaml` and `cms/styles/image.yaml` exist after migration (older migrator versions emitted both), delete `cms/styles/image.yaml` — `cms/style/style.yaml` is the canonical XP 8 form.
-13. Then ask before running `enonic project deploy <sandbox>` for a sandbox runtime check (creating an XP 8 sandbox first via `enonic sandbox create` if none exists).
+11. Delete the originals: `rm -rf src/main/resources/site`, `rm src/main/resources/application.xml`, `rm ./migrator` (rationale in the Cleanup step).
+12. Remove the duplicate `cms/styles/image.yaml` if the migrator emitted one (see the Cleanup step).
+13. Optionally deploy — pick the sandbox and run mode *with the user* (see the Deploy step).
 
 OK to proceed? Reply "go" to apply all, or list the numbers to skip.
 ```
 
 ### 4. Execute
+
+If the plan included installing the Enonic CLI (Detect found it missing), do that first — the Validate step needs it:
+`npm install -g @enonic/cli` (or the platform fallback from "The Enonic CLI").
 
 Apply the approved changes in two passes — descriptors first via the migrator, then build/code edits by hand.
 
@@ -178,9 +218,15 @@ curl -fsSL https://raw.githubusercontent.com/enonic/xp8migrator/main/migrator-in
 ./migrator -e overwrite         # non-interactive — overwrite any pre-existing target files
 ```
 
+> ⚠️ **Flag this to the user before running it.** The `curl … | sh` install pipes a remote script straight into a shell, which Claude's
+> security constraints block in auto / auto-accept (headless) mode — it only runs when the user is present to approve it. Tell the user up
+> front that in auto mode this step will fail, and offer them the choice: run the installer themselves (suggest typing
+> `! curl -fsSL https://raw.githubusercontent.com/enonic/xp8migrator/main/migrator-install.sh | sh` in the prompt) or approve it
+> interactively. Once `./migrator` exists in the project root, the rest of the descriptor pass proceeds normally.
+
 If the migrator errors out, run `./migrator -h` to inspect the available flags. **Don't run the migrator a second time with `-x`** — its
 post-migration step tries to move `cms/style/style.yaml` again and fails with `FileAlreadyExistsException`. Cleanup of the original XML
-happens via plain `rm` after the build is green (see step 5 below), not via `./migrator -x`.
+happens via plain `rm` after the build is green (see the Cleanup step), not via `./migrator -x`.
 
 The migrator leaves the original `site/` tree and `application.xml` in place. Sibling `.js`, `.html`, and `.svg` files are *copied* into the
 new `cms/` location during migration. Don't delete anything yet — let `enonic project build` validate the result first. If it fails, the
@@ -205,6 +251,18 @@ dependency-resolution failures. The CLI drives the project's Gradle wrapper inte
 report success or paste the first failure with its file/line. If the build fails, the original `site/` tree and `application.xml` are
 still in place, so the user can inspect them while you suggest a fix; ask before retrying.
 
+**A green build does NOT prove the dependency set is right.** XP `include`s aren't transitive, so a bundled lib's runtime
+`require('/lib/xp/*')` never surfaces at build time (see the *Migrate dependencies* edit under "Build files") — the only evidence that a
+declared dep is used, or that a candidate for removal is truly dead, is a **JAR-level `require` scan** of the built artifact:
+
+```sh
+unzip -o build/libs/<app>.jar -d /tmp/<app>-jar >/dev/null
+grep -rhoE "require\(['\"]/lib/[^'\"]+" /tmp/<app>-jar | sed -E "s/require\(['\"]//" | sort -u
+```
+
+Every `/lib/xp/<name>` the scan lists must have a matching `xplibs.<name>` `include`. This scan is the *prerequisite* for any dependency
+pruning — and pruning itself is post-upgrade work, **out of scope for this skill**. During the upgrade, never remove an `include`.
+
 ### 6. Cleanup (only after the build is green AND the user confirms)
 
 Once `enonic project build` passes, **ask the user whether to delete the originals before doing it** — don't remove anything automatically.
@@ -221,10 +279,10 @@ rm ./migrator                   # remove the binary too
 ```
 
 **Do NOT uninstall the Enonic CLI** during cleanup. Unlike `./migrator` (a single-purpose binary dropped into the project), the CLI is a
-machine-level developer tool — if step 0 installed it, it stays installed.
+machine-level developer tool — if the upgrade installed it, it stays installed.
 
 The migrator already copied sibling `.js`/`.html`/`.svg` files from `site/` into `cms/`, so wiping the entire `site/` directory is safe.
-Don't use `./migrator -x` for this — running the migrator on already-migrated output fails its post-migration step.
+(Use plain `rm`, never `./migrator -x` — see the Descriptor pass under Execute.)
 
 If both `cms/style/style.yaml` and `cms/styles/image.yaml` exist after migration (older migrator versions emitted both), delete
 `cms/styles/image.yaml` — `cms/style/style.yaml` is the canonical XP 8 form.
@@ -235,22 +293,42 @@ After cleanup, **ask the user whether to deploy** — don't run it automatically
 so it warrants explicit confirmation. Phrase it as a yes/no question, e.g. "Build passed. Want me to deploy to a sandbox with
 `enonic project deploy`?"
 
-If the user says yes, run the deployment **purely via the Enonic CLI** — no direct gradle invocations:
+If the user says yes, run the deployment **purely via the Enonic CLI** — no direct gradle invocations — and follow the non-interactive
+discipline from "Running the Enonic CLI non-interactively" above: list the candidates, let the *user* pick, then run with everything
+pinned as explicit flags.
 
 ```sh
-enonic sandbox list                          # find an existing XP 8 sandbox
-enonic sandbox create <name> -v <xpVersion> -f   # only if no suitable sandbox exists — match the app's xpVersion
-enonic project deploy <sandbox-name> -f      # builds the JAR and deploys it to the sandbox
+enonic sandbox list      # read-only — sandboxes + distro versions; the running one (only one at a time) is marked with a leading "*"
 ```
 
-The sandbox must run an XP 8 distribution matching the app's new `xpVersion` — an upgraded app deployed to a leftover XP 7 sandbox will
-fail to load. If `enonic sandbox list` shows only XP 7 sandboxes, create a fresh one rather than reusing them.
+1. **Pick the sandbox WITH the user — never let `-f` choose.** From the list, present the sandboxes whose distro matches the app's new
+   `xpVersion` (an XP 8 app on a leftover XP 7 sandbox fails to load) and ask which one to use — or whether to create a fresh one. If a new
+   sandbox is needed, confirm the version, then create it with the **Essentials** template:
+   `enonic sandbox create <name> -v <xpVersion> -t essentials -f`.
+2. **Check whether a sandbox is already running before offering to start one.** In the `enonic sandbox list` output the running sandbox is
+   marked with a leading **`*`**, and only one sandbox runs at a time. So:
+    - **The sandbox you picked is already running** (`*` next to it) → don't start anything; stage the JAR with
+      `enonic project deploy <sandbox> --skip-start -f` and the live server hot-loads it.
+    - **A *different* sandbox is running** → you can't start the target while it's up. Surface this to the user; they decide whether to stop
+      the running one (`enonic sandbox stop <name>`, for a detached sandbox) or just deploy to the one already running.
+    - **Nothing is running** → proceed to settle the start mode below.
+3. **Settle the start mode (when nothing relevant is already running).** `enonic project deploy <sandbox>` will, by default, start the
+   sandbox and **attach to a long-running foreground XP server that hangs the agent shell**. Ask the user which they want:
+    - `enonic project deploy <sandbox> --skip-start -f` — builds and stages the JAR into the sandbox without starting it (no live runtime,
+      but the shell returns immediately); or
+    - `enonic project deploy <sandbox> -f` run **in the background** (`run_in_background` in Claude Code) — when they want a live runtime to
+      poke at. Read the command's own output to report startup; do not otherwise probe the server (see below).
 
-Report only what the CLI commands themselves return (success / the first failure with file/line). **Do not try to verify the deployment by
-any other means** — don't tail `server.log`, don't grep for the app under XP_HOME. Runtime load errors live in server logs that aren't this
-skill's responsibility. If the user wants runtime verification beyond the CLI's own output, hand off to the `xp-app-debugger` skill.
+Always name the sandbox explicitly. Reach for `-f` only after the sandbox and start behaviour are pinned — it is there to suppress the
+prompts you have already answered, not to answer them for you.
 
-The `xp-app-debugger` skill can help interpret build/runtime errors.
+**Confirm the sandbox started — do not verify the app installed.** Report only what the deploy/start command itself prints (the sandbox
+started, or the first failure with file/line). **Don't check whether the app actually installed** — don't open the Applications list,
+don't tail `server.log`, don't grep XP_HOME. Once the sandbox reports started, hand the user a link to view it themselves:
+
+- **Admin console / launcher:** <http://localhost:8080/admin> — default dev port is `8080`; if you passed `--http.port`, use that port.
+
+The user inspects the running app from there. If they hit a runtime/load error and want help, hand off to the `xp-app-debugger` skill.
 
 ## What changes between XP 7 and XP 8
 
@@ -258,10 +336,11 @@ This is the canonical change set. Apply only the items that exist in the user's 
 
 > **Verify the public API of any XP `lib-*` before editing JS/Java that calls it.** This skill's lists of removed/renamed functions are a
 > starting point, not the source of truth — they may be incomplete or out of date. Library APIs evolve between XP 8 pre-releases. Before
-> recommending a replacement function (`getHomeToolUrl`, `extensionUrl`, etc.), confirm it actually exists in the current `lib-*` source by
-> reading the relevant `.ts`/`.js` file at <https://github.com/enonic/xp/tree/master/modules/lib/> (raw form:
-`https://raw.githubusercontent.com/enonic/xp/master/modules/lib/lib-<name>/src/main/resources/lib/xp/<name>.ts`). Don't assume a named
-> function survived just because it was in XP 7. Same rule applies to Java APIs — verify before editing controllers that import XP types.
+> recommending a replacement function (`getHomeToolUrl`, `extensionUrl`, etc.), confirm it actually exists by reading the relevant
+> `.ts`/`.js` file **at the release tag matching the `xpVersion` you're pinning**, not `master` — `master` can be a major ahead of what you
+> install (read it only when you're tracking the very latest or a SNAPSHOT). Browse the libs at
+> <https://github.com/enonic/xp/tree/master/modules/lib/> and switch the branch selector to that tag. Don't assume a function survived just
+> because it was in XP 7; the same applies to Java APIs — verify before editing controllers that import XP types.
 
 ### Build files
 
@@ -324,9 +403,20 @@ Use the highest version that listing actually shows; it may lag the XP runtime v
     }
    ```
 
-   **Omit `app { }` entirely by default** (the verified XP 8 reference apps don't carry it). Leaving it empty also works. Only keep
-   `app { createDefaultDevTask = false }` if the project registers its own custom `dev` task (e.g. an `NpmTask` for TS-based apps);
-   otherwise the auto-registered `dev` task is what you want.
+   **Omit `app { }` entirely by default** (the verified XP 8 reference apps don't carry it). Leaving it empty also works.
+
+   **Only keep `app { createDefaultDevTask = false }` when the project's `dev` task does something the plugin's default `dev` task does
+   *not* — not merely because a `dev` task is present.** When `createDefaultDevTask` is left on (its default), the plugin auto-registers a
+   `dev` task (`com.enonic.gradle.xp.app.DevTask`) whose whole job is to run the continuous task — by default
+   `./gradlew deploy --continuous -Penv=dev` (plus `-PxpHome=…` when set), i.e. redeploy on every source change. So compare the project's
+   existing `dev` task against that:
+    - **Functionally equivalent** (it just runs `deploy` / the build continuously in dev mode) → it's **redundant**: delete it *and* drop
+      `createDefaultDevTask = false`, letting the auto-registered default take over (the `app { }` block is then empty — remove it).
+    - **Genuinely different** (e.g. an `NpmTask` running `npm run watch` to drive a TS/bundler build, which the default deploy-continuous
+      task can't do) → keep it, and keep `app { createDefaultDevTask = false }` so the two don't collide.
+
+   Read the plugin source to see exactly what the default does before deciding:
+   <https://github.com/enonic/xp-gradle-plugin/blob/master/src/main/java/com/enonic/gradle/xp/app/DevTask.java>.
 
 3. **Migrate dependencies** to the `xplibs.*` catalog. The catalog has two namespaces:
     - **APIs** (`com.enonic.xp:*-api`) → `xplibs.api.<name>` (e.g. `portal-api` → `xplibs.api.portal`, `core-api` → `xplibs.api.core`,
@@ -341,7 +431,7 @@ Use the highest version that listing actually shows; it may lag the XP runtime v
    +    implementation xplibs.api.portal
    +    include xplibs.content
    +    include xplibs.portal
-        include "com.enonic.lib:lib-thymeleaf:3.0.0-SNAPSHOT"
+        include "com.enonic.lib:lib-thymeleaf:3.0.0-B1"
     }
    ```
 
@@ -350,13 +440,37 @@ Use the highest version that listing actually shows; it may lag the XP runtime v
    to a separate Gradle version catalog (see step 5). See `references/examples.md` for the complete `xplibs` alias tables (6 APIs + 24
    libs).
 
-   **`com.enonic.lib:lib-thymeleaf` requires a version bump for XP 8.** XP 7-era apps typically pin `2.1.1`, which is not compatible with XP
-    8. The XP 8-targeted build is `3.0.0-SNAPSHOT`, currently published only to the Enonic dev channel — not the public release repo.
-       Surface this in the upgrade plan whenever the app declares `lib-thymeleaf:2.1.1` (or any other 2.x), and bump it to `3.0.0-SNAPSHOT`.
-       The build needs the dev channel reachable: **replace** any existing `xp.enonicRepo()` line in `repositories { … }` with
-       `xp.enonicRepo( "dev" )` (the dev variant is a superset that includes releases — don't add it alongside the plain form, swap it in).
-       Do **not** declare a raw `maven { url 'https://repo.enonic.com/snapshot' }` block; use the `xp.enonicRepo( "dev" )` shortcut. Watch
-       for similar 2.x → 3.0.0-SNAPSHOT transitions across other `com.enonic.lib:*` libraries during the alpha/beta XP 8 window.
+   **The dependency conversion is a pure 1:1 rename — never drop an `include` as "unused" during the upgrade.** XP `include` dependencies
+   are **not transitive**: bundled third-party JS libs can `require('/lib/xp/*')` modules that the app's own source never references (e.g.
+   `lib-util`'s `getLocale.js` does `require('/lib/xp/admin')`, so an app that bundles `lib-util` needs `xplibs.admin` even with zero
+   `/lib/xp/admin` calls of its own). Grepping app source is therefore **not** sufficient evidence that a dep is unused — the build will
+   pass and the app will fail at runtime on the first page render. Convert every `include` line as-is; if the number of `include`s changed
+   between XP 7 and XP 8 (other than the API/alias rename), you pruned something — put it back. Dependency pruning is post-upgrade work,
+   **out of scope for this skill**, and must only be done after a JAR-level `require` scan (see the validation step).
+
+   **`com.enonic.lib:lib-thymeleaf` requires a version bump for XP 8.** XP 7-era apps typically pin `2.1.1`, which is not compatible with
+   XP 8. Bump it to the latest released `3.x` — `3.0.0-B1` at time of writing — which is published to the **public** repo (find the current
+   one with the Maven-metadata check below). Surface this in the plan whenever the app declares `lib-thymeleaf:2.1.1` (or any other 2.x). A
+   released `3.x` resolves through the plain `xp.enonicRepo()` — no dev channel needed. Only if no released `3.x` exists yet, fall back to
+   `3.0.0-SNAPSHOT` (dev channel only): then **replace** the existing `xp.enonicRepo()` in `repositories { … }` with
+   `xp.enonicRepo( "dev" )`
+   (a superset that includes releases — swap it in, don't add it alongside), and don't hand-roll a raw
+   `maven { url 'https://repo.enonic.com/snapshot' }` block. Watch for the same 2.x → 3.x transition across other `com.enonic.lib:*`
+   libraries during the XP 8 alpha/beta window.
+
+   **Check released artifacts, not the lib repo's `master` branch.** A lib's `master`-branch `gradle.properties` reflects *unreleased*
+   development (e.g. `xpVersion = 8.1.0-SNAPSHOT`) and says nothing about what is installable today. Determine the latest released
+   XP 8-compatible version from the published Maven metadata under <https://repo.enonic.com/public/>, or from Enonic Market — never from a
+   GitHub branch:
+
+   ```sh
+   curl -s 'https://repo.enonic.com/public/com/enonic/lib/<lib-name>/maven-metadata.xml' | grep -oE '<version>[^<]+</version>'
+   ```
+
+   Pick the highest version compatible with the target `xpVersion` — during the XP 8 pre-release window that is often a `-Bn` beta
+   (e.g. `lib-menu` `4.2.1` → `5.0.0-B1`, `lib-urlredirect` `3.0.1` → `4.0.0-B1`). If you then need to confirm a function or API the app
+   calls, read the lib's source **at the matching release tag**, not `master` — master can be one or more XP majors ahead of the newest
+   installable release.
 
 4. **Extract third-party libraries into `gradle/libs.versions.toml`** (recommended for apps with two or more `com.enonic.lib:*` deps). The
    XP 8 reference apps centralize non-`com.enonic.xp` libs in a Gradle version catalog so versions are declared once and referenced as
@@ -365,9 +479,9 @@ Use the highest version that listing actually shows; it may lag the XP runtime v
    ```toml
    # gradle/libs.versions.toml
    [versions]
-   thymeleaf = "3.0.0-SNAPSHOT"
+   thymeleaf = "3.0.0-B1"
    xslt      = "2.1.1"
-   asset     = "2.0.0-SNAPSHOT"
+   asset     = "2.0.0-RC1"
 
    [libraries]
    lib-thymeleaf = { module = "com.enonic.lib:lib-thymeleaf", version.ref = "thymeleaf" }
@@ -381,9 +495,9 @@ Use the highest version that listing actually shows; it may lag the XP runtime v
     dependencies {
         include xplibs.content
         include xplibs.portal
-   -    include "com.enonic.lib:lib-thymeleaf:3.0.0-SNAPSHOT"
+   -    include "com.enonic.lib:lib-thymeleaf:3.0.0-B1"
    -    include "com.enonic.lib:lib-xslt:2.1.1"
-   -    include "com.enonic.lib:lib-asset:2.0.0-SNAPSHOT"
+   -    include "com.enonic.lib:lib-asset:2.0.0-RC1"
    +    include libs.lib.thymeleaf
    +    include libs.lib.xslt
    +    include libs.lib.asset
@@ -431,16 +545,14 @@ snapshot:
    <https://repo.enonic.com/public/com/enonic/xp/core-api/>.
 2. **Pre-release** (alpha / beta, e.g. `8.0.0-A3`, `8.0.0-B1`) — use the highest one published to the release repo if no stable exists.
 3. **Snapshot** (e.g. `8.0.0-SNAPSHOT`) — only as a last resort, when nothing else is published. Snapshots resolve only through
-   `xp.enonicRepo("dev")` — which step 3 of the build edits configures — so they work, but they move under your feet between rebuilds. If
-   the
-   user is on the very old `7.x` series (< 7.16), warn that XP recommends going through 7.16.x first (see
-   <https://raw.githubusercontent.com/enonic/doc-xp/refs/heads/8.0/docs/release/upgrade.adoc>),
-   but the source-level edits are the same. Add `projectName = ...` if missing — `settings.gradle` reads it. Keep `appName`, `version`,
-   `group` — those are still consumed by Gradle. The metadata fields `appDisplayName`, `vendorName`, `vendorUrl` (and the legacy unprefixed
-   `displayName`) **move into `enonic.yaml`** in XP 8 (per the upstream upgrade guide); they can be removed from `gradle.properties`
-   afterwards. The migrator will pick them up from `gradle.properties` if it finds them there, write them into `enonic.yaml`, and you
-   can
-   delete the now-redundant entries.
+   `xp.enonicRepo("dev")` (the same dev-channel swap the *Migrate dependencies* edit covers), so they work but move under your feet between
+   rebuilds.
+
+If the user is on the very old `7.x` series (< 7.16), warn that XP recommends going through 7.16.x first (see the
+[instance upgrade guide](https://raw.githubusercontent.com/enonic/doc-xp/refs/heads/8.0/docs/release/upgrade.adoc)) — but the source-level
+edits are the same. Add `projectName = …` if missing (`settings.gradle` reads it); keep `appName`, `version`, `group` (still consumed by
+Gradle). Display/vendor metadata (`appDisplayName`, `vendorName`, `vendorUrl`, and the legacy unprefixed `displayName`) is handled in the
+*Application descriptor* section below — it moves into `enonic.yaml`.
 
 **`gradle/wrapper/gradle-wrapper.properties`:** plugin 4.x requires **Gradle 9+**. Pin to a current 9.x via the wrapper task (which also
 refreshes `gradle-wrapper.jar`):
@@ -534,11 +646,11 @@ In admin tool **controllers**:
 - `portalLib.assetUrl`, `widgetUrl`, etc. work the same.
 - The admin lib lost `getAssetsUri()`, `getBaseUri()`, `getLauncherPath()`. Replace with `extensionUrl({ application, extension })` and
   `getHomeToolUrl()`.
-- **Confirm against current source before editing.** As of XP 8 master the only `/lib/xp/admin` exports are `getToolUrl`, `getHomeToolUrl`,
-  `getInstallation`, `getVersion`, `widgetUrl` (deprecated), and `extensionUrl` — `getLauncherUrl()` is also gone, and the launcher script
-  is no longer injected at all. Verify the current API
-  at <https://raw.githubusercontent.com/enonic/xp/master/modules/lib/lib-admin/src/main/resources/lib/xp/admin.ts>; same rule applies to
-  other libs (`lib-portal`, `lib-content`, etc.) — see <https://github.com/enonic/xp/tree/master/modules/lib/>.
+- **Confirm against the source for your pinned version before editing.** On current `master` the only `/lib/xp/admin` exports are
+  `getToolUrl`, `getHomeToolUrl`, `getInstallation`, `getVersion`, `widgetUrl` (deprecated), and `extensionUrl` — `getLauncherUrl()` is
+  gone, and the launcher script is no longer injected at all. Treat that as illustrative and verify against the `lib-admin` source **at the
+  tag matching your `xpVersion`** (`…/modules/lib/lib-admin/src/main/resources/lib/xp/admin.ts`), not `master`. The same applies to other
+  libs (`lib-portal`, `lib-content`, etc.) — see <https://github.com/enonic/xp/tree/master/modules/lib/>.
 - The default Admin Home path is now `/admin` (was `/admin/home`).
 
 In admin tool **HTML templates** (Mustache/Thymeleaf): the launcher script is no longer injected — replace the old launcher include with a
@@ -625,6 +737,10 @@ error), apply the changes documented at
 
 ## Tips for the conversation
 
+- **Narrate before you act.** Before each step that runs a command or edits a file, say in one line what you're about to do and why, so the
+  user can follow along and step in before it happens — don't open with silent tool calls. For consequential or hard-to-reverse actions
+  (the migrator run, file deletions, the build, a deploy, a CLI install), state the intent and, where the workflow calls for it, wait for
+  the go.
 - **Quote what you found.** When presenting the plan, quote the actual current values (`xpVersion = 7.9.0`, plugin `3.6.2`) so the user can
   tell at a glance you read their files instead of guessing.
 - **Use diffs, not prose.** When the change is non-trivial (e.g. multi-line `build.gradle` plugin or dependency edits), show a unified-diff
@@ -633,20 +749,19 @@ error), apply the changes documented at
   Gradle needs to be bumped, run the wrapper task: `./gradlew wrapper --gradle-version 9.0.0`.
 - **Stop on the first deal-breaker.** If a required file is missing or in an unexpected location, ask before proceeding — don't synthesize a
   guess.
-- **Hand off to siblings when relevant.** For new features added during the upgrade, point to `xp-app-creator`. For build failures, point to
-  `xp-app-debugger`. For releasing the upgraded app, point to `gradle-release`.
+- **Hand off to siblings when relevant.** For enonic CLI usage during the upgrade, consult `enonic-cli`. For build failures, point to
+  `xp-app-debugger`.
 
 ## See also
 
-- <https://raw.githubusercontent.com/enonic/doc-code/refs/heads/master/docs/upgrade.adoc> — upstream Enonic XP 7 → XP 8 app
-  upgrade guide (source of truth)
+- <https://raw.githubusercontent.com/enonic/doc-code/refs/heads/master/docs/upgrade.adoc> — upstream Enonic XP 7 → XP 8 app upgrade guide (
+  source of truth)
 - `references/examples.md` — full `xplibs.*` alias tables (6 APIs + 24 libs), worked `build.gradle` examples (site app with version catalog;
   TS app with custom `dev` task), TypeScript wiring with `@enonic-types/*`
 - `references/manual-schemes-migration.md` — comprehensive set of descriptor transformations (paths, `kind:` map, field renames, special
   cases) — read this when the migrator is unavailable or when reviewing what it produced
 - <https://raw.githubusercontent.com/enonic/doc-xp/refs/heads/8.0/docs/release/upgrade.adoc> — full instance-level upgrade guide
   (dump/load, security, management API changes)
-- `xp-app-creator` skill — current XP 8 app structure, components, build configuration
 - `xp-app-debugger` skill — diagnose build/runtime errors after upgrade
 - `enonic-cli` skill — full reference for every `enonic` command this skill uses (`project build`/`deploy`, `sandbox create`/`list`,
   `dump create`/`load` for the data side)

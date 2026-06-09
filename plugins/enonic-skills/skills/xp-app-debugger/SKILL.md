@@ -8,7 +8,7 @@ description: >
   WARN entries.
 license: MIT
 compatibility: Claude Code
-allowed-tools: Bash(tail:*) Bash(grep:*) Bash(./gradlew:*) Bash(enonic:*) Read Edit Grep Glob
+allowed-tools: Bash(tail:*) Bash(grep:*) Bash(lsof:*) Bash(pgrep:*) Bash(curl:*) Bash(./gradlew:*) Bash(enonic:*) Read Edit Grep Glob
 metadata:
   author: enonic
   xp-version: ">=7.0"
@@ -39,7 +39,11 @@ metadata:
   points to a deploy path mismatch, not an app error. Actual failures (incompatible version, broken code) always produce log entries.
 - **User says "debug my app"**: Ask whether to deploy first. If yes, use project-specific deploy instructions from CLAUDE.md/README, or fall
   back to `./gradlew deploy`.
-- Identify error type: build failure (Gradle/TS), runtime error (server.log stack trace), or silent failure (app not visible to XP at all).
+- **Symptom is an HTTP response (4xx/5xx, blank or "not available" preview/widget) with no matching log entry**: do not conclude "no error" —
+  XP logs many 4xx only at DEBUG and renders generic error pages. Reproduce the request against the running instance and read the raw
+  response body, where the real reason lives. See `references/runtime-http-probing.md`.
+- Identify error type: build failure (Gradle/TS), runtime error (server.log stack trace), logless HTTP failure (4xx/5xx whose reason is only
+  in the response body — see `references/runtime-http-probing.md`), or silent failure (app not visible to XP at all).
 - Locate relevant files: source (`src/main/resources/`) and compiled (`build/resources/main/`).
 
 **Gate**: Present findings — error type, location, relevant files. Ask user before proceeding to analysis.

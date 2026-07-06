@@ -25,6 +25,15 @@ never registered.
 
 ---
 
+## Nashorn TypeError: X is not a function (ES2015+ API in server bundle)
+
+**Symptom**: `TypeError: Object.values is not a function` (or similar ES2015+ API) at module scope in a `_chunks/*.js` file.
+**Cause**: A dependency ships untranspiled ES2015+ API calls; esbuild/tsup `target: es5` only transpiles syntax, NOT APIs. Module-scope calls crash at chunk load, before any polyfill can run.
+**Fix**: Rewrite with ES5 APIs at the source (e.g. `Object.keys(o).map(k=>o[k])` instead of `Object.values(o)`), or ensure a core-js polyfill loads first. Check `git log -L` — such fixes get regressed by dep-update commits.
+**Applies to**: All XP versions running Nashorn server-side.
+
+---
+
 ## Silent app — no log entries at all
 
 **Symptom**: User reports "app doesn't load" or "I can't see it in logs". Grepping `server.log` for the app name returns zero results.

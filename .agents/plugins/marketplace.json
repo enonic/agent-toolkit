@@ -1,0 +1,20 @@
+{
+  "name": "enonic-agent-toolkit",
+  "interface": {
+    "displayName": "Enonic Agent Toolkit"
+  },
+  "plugins": [
+    {
+      "name": "xp",
+      "source": {
+        "source": "local",
+        "path": "./plugins/xp"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

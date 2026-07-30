@@ -6,7 +6,6 @@ description: >
   server.log). Use when the user asks to debug, troubleshoot, or fix
   errors in an XP app, or pastes XP log output containing ERROR or
   WARN entries.
-license: MIT
 metadata:
   author: enonic
   xp-version: ">=7.0"

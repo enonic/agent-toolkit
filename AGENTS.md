@@ -1,57 +1,42 @@
-# enonic-marketplace
+# Agent toolkit contribution instructions
 
-Enonic plugins for AI coding agents, following the [Agent Skills specification](https://agentskills.io/specification).
+This repository publishes shared Agent Skills for Enonic products. Version 0.5.0 contains the self-contained `plugins/xp/` package for
+Claude Code and Codex, with the same skill directories installable by GitHub Copilot and Gemini CLI.
 
-## Layout
+## Plugin structure
 
+- Keep canonical skill content under `plugins/xp/skills/`; do not duplicate skills per client.
+- Keep both plugin manifests inside `plugins/xp/` and both marketplace registries synchronized.
+- The plugin name is `xp`, the marketplace name is `enonic-agent-toolkit`, and repository links use
+  `https://github.com/enonic/agent-toolkit`.
+- Bump the Claude marketplace and both plugin manifest versions together.
+- Keep licensing in the repository-level `LICENSE` file rather than duplicating license metadata across packaged files.
+- Do not add empty future plugins. Group future skills by capability rather than client.
+
+## Portable skill writing
+
+- Follow the [Agent Skills specification](https://agentskills.io/specification).
+- Use generic actions such as read, search, edit, run, and ask. Do not name a client-specific tool as an imperative.
+- Do not add client compatibility declarations or automatic tool approvals to shared skill frontmatter. Each client retains its normal
+  permission prompts.
+- Keep every `SKILL.md` entry point below 500 lines. Move detailed material to directly referenced files in the skill's `references/`
+  directory.
+- Keep relative references within the self-contained skill directory.
+
+## Validation
+
+Install the exact versions in `requirements-dev.txt` and `package-lock.json`, then run:
+
+```sh
+PATH="$PWD/.venv/bin:$PATH" CLAUDE_BIN="$PWD/node_modules/.bin/claude" npm run validate
+CODEX_BIN="$PWD/node_modules/.bin/codex" npm run validate:codex
+npm run validate:copilot
+GEMINI_BIN="$PWD/node_modules/.bin/gemini" npm run validate:gemini
 ```
-.claude-plugin/marketplace.json       # Claude Code marketplace registry
-plugins/
-  enonic-skills/
-    .claude-plugin/plugin.json        # Plugin manifest
-    skills/
-      xp-app-upgrader/SKILL.md        # compatibility: Claude Code, Codex
-      xp-app-debugger/SKILL.md        # compatibility: Claude Code
-      enonic-cli/SKILL.md             # compatibility: Claude Code, Codex
-```
 
-Each skill is a self-contained directory with a `SKILL.md` (YAML frontmatter + Markdown instructions) and optional `references/`,
-`scripts/`, and `assets/` subdirectories. The `compatibility` frontmatter field declares which agents the skill targets.
+These checks validate all three skills, the strict Claude marketplace, installation and discovery in Codex, GitHub Copilot, and Gemini
+CLI, manifest consistency, relative references, local documentation links, stale naming, entry-point size, and portability and permission
+policies.
 
-## Use with Claude Code
-
-```
-/plugin marketplace add enonic/ai-enonic-marketplace
-/plugin install enonic-skills@enonic-marketplace
-```
-
-## Use with Codex
-
-Install a skill directly from this repo into `~/.codex/skills`:
-
-```bash
-python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
-  --repo enonic/ai-enonic-marketplace \
-  --path plugins/enonic-skills/skills/xp-app-upgrader
-```
-
-Only skills whose frontmatter includes `Codex` in the `compatibility` field are supported on Codex.
-
-## Use with other agents
-
-Any agent that follows the Agent Skills specification can load `SKILL.md` files directly from `plugins/enonic-skills/skills/<skill-name>/`.
-The skill body uses Claude Code tool names; agents on other platforms should map them to their equivalent tools.
-
-## Writing skills for this marketplace
-
-When a skill targets more than one agent (`compatibility: Claude Code, Codex`, etc.), write instructions in **generic action verbs** and
-mention the agent-specific tool in parentheses — never as the primary phrasing. This keeps the body readable on every supported agent while
-still giving Claude Code (or whichever agent) the exact tool name to bind to.
-
-- Good: `Edit the file in-place (Edit tool in Claude Code) to change build.gradle.`
-- Good: `Search the project for usages (Grep tool in Claude Code).`
-- Bad: `Use Edit for in-place changes.` — names a Claude tool as the imperative; other agents have no such tool to bind to.
-- Bad: `Use the Grep tool.` — same problem.
-
-Single-agent skills (`compatibility: Claude Code`) can use Claude tool names directly, but the generic-verb-plus-parenthetical form is still
-preferred — it costs nothing and survives a later widening of `compatibility`.
+Releases are created only through the manually dispatched release workflow on `master`. Do not manually tag or publish from a feature
+branch.

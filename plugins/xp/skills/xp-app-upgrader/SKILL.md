@@ -8,7 +8,6 @@ description: >
   Gradle plugin to 4.x, or finishing/fixing partial xp8migrator runs. Also
   triggers on post-upgrade XP 8 deployment errors. Skip for brand-new XP 8
   apps and for upgrades between XP 7.x minor versions.
-license: MIT
 metadata:
   author: enonic
   xp-version: "7.x → 8.x"

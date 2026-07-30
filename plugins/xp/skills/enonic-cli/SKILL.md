@@ -7,8 +7,6 @@ description: >
   the user needs to run enonic commands, manage Enonic XP instances, deploy
   applications, or perform data operations with the Enonic CLI tool.
 license: MIT
-compatibility: Claude Code, Codex
-allowed-tools: Bash(enonic:*) Read
 metadata:
   author: enonic
   cli-version: "4.0.0"

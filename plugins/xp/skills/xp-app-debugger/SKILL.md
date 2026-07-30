@@ -7,8 +7,6 @@ description: >
   errors in an XP app, or pastes XP log output containing ERROR or
   WARN entries.
 license: MIT
-compatibility: Claude Code
-allowed-tools: Bash(tail:*) Bash(grep:*) Bash(lsof:*) Bash(pgrep:*) Bash(curl:*) Bash(./gradlew:*) Bash(enonic:*) Read Edit Grep Glob
 metadata:
   author: enonic
   xp-version: ">=7.0"
@@ -64,7 +62,7 @@ metadata:
 
 - Propose specific fix with rationale.
 - Show exact code change (before/after).
-- Get user approval, then apply with Edit tool.
+- Get user approval, then edit the file.
 
 **Gate**: Fix applied. Ask user whether to redeploy and verify.
 

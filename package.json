@@ -1,0 +1,16 @@
+{
+  "name": "enonic-agent-toolkit-validation",
+  "private": true,
+  "version": "0.5.0",
+  "devDependencies": {
+    "@anthropic-ai/claude-code": "2.1.220",
+    "@google/gemini-cli": "0.53.0",
+    "@openai/codex": "0.146.0"
+  },
+  "scripts": {
+    "validate": "bash scripts/validate.sh",
+    "validate:codex": "bash scripts/validate-codex.sh",
+    "validate:copilot": "bash scripts/validate-copilot.sh",
+    "validate:gemini": "bash scripts/validate-gemini.sh"
+  }
+}

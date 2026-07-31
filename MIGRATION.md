@@ -46,6 +46,11 @@ Start a new thread so Codex discovers the plugin skills.
 
 To roll back, remove the `enonic` plugin and renamed marketplace, restore the backed-up skill directories, and start another new thread.
 
+## GitHub Copilot and Gemini CLI
+
+Support for both clients is new in v0.5.0. Before v0.5.0 only Claude Code and Codex were supported, so there is no previous installation
+to migrate; install directly per [README.md](README.md#installation).
+
 ## Verify
 
 In a new session or thread, confirm that `enonic-cli`, `xp-app-debugger`, and `xp-app-upgrader` are discoverable. Claude Code and Codex

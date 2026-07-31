@@ -21,7 +21,7 @@ STALE_NAMES = (
 )
 STALE_ALLOWED = {"CHANGELOG.md", "MIGRATION.md"}
 CLIENT_WORDING = re.compile(
-    r"allowed-tools|compatibility:\s*.*(?:Claude|Codex)|"
+    r"compatibility:\s*.*(?:Claude|Codex)|"
     r"\b(?:Claude Code|Codex)\b|AskUserQuestion|run_in_background|"
     r"\b(?:Bash|Read|Write|Edit|Grep|Glob|WebFetch) tool\b"
 )

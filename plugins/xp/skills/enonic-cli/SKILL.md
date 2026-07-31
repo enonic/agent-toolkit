@@ -6,6 +6,7 @@ description: >
   application lifecycle, cloud deployment, and server administration. Use when
   the user needs to run enonic commands, manage Enonic XP instances, deploy
   applications, or perform data operations with the Enonic CLI tool.
+allowed-tools: Bash(enonic:*) Read
 metadata:
   author: enonic
   cli-version: "4.0.0"

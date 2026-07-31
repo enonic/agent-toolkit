@@ -1,5 +1,5 @@
 {
-  "name": "enonic-agent-toolkit-validation",
+  "name": "enonic-agent-toolkit",
   "private": true,
   "version": "0.5.0",
   "devDependencies": {

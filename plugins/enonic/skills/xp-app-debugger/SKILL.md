@@ -6,8 +6,6 @@ description: >
   server.log). Use when the user asks to debug, troubleshoot, or fix
   errors in an XP app, or pastes XP log output containing ERROR or
   WARN entries.
-license: MIT
-compatibility: Claude Code
 allowed-tools: Bash(tail:*) Bash(grep:*) Bash(lsof:*) Bash(pgrep:*) Bash(curl:*) Bash(./gradlew:*) Bash(enonic:*) Read Edit Grep Glob
 metadata:
   author: enonic
@@ -64,7 +62,7 @@ metadata:
 
 - Propose specific fix with rationale.
 - Show exact code change (before/after).
-- Get user approval, then apply with Edit tool.
+- Get user approval, then edit the file.
 
 **Gate**: Fix applied. Ask user whether to redeploy and verify.
 

@@ -1,103 +1,96 @@
-# Enonic Marketplace
+# Enonic Agent Toolkit
 
-Enonic's marketplace of [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and Codex plugins, following
-the [Agent Skills specification](https://agentskills.io/specification).
+Shared [Agent Skills](https://agentskills.io/specification) for Enonic XP. Claude Code and Codex install them through the `enonic` plugin;
+GitHub Copilot and Gemini CLI install the same canonical skill directories natively.
+
+Version 0.5.0 provides the same three skills to all four supported clients:
+
+| Skill | Purpose |
+|---|---|
+| [enonic-cli](plugins/enonic/skills/enonic-cli/) | Use the `enonic` command for projects, sandboxes, data, apps, cloud deployment, and server administration. |
+| [xp-app-debugger](plugins/enonic/skills/xp-app-debugger/) | Diagnose Enonic XP build failures and server runtime errors. |
+| [xp-app-upgrader](plugins/enonic/skills/xp-app-upgrader/) | Upgrade Enonic XP 7 applications to XP 8. |
 
 ## Installation
 
 ### Claude Code
 
-Add the marketplace and install the `enonic-skills` plugin:
-
+```text
+/plugin marketplace add enonic/agent-toolkit
+/plugin install enonic@enonic-agent-toolkit
+/reload-plugins
 ```
-/plugin marketplace add enonic/ai-enonic-marketplace
-/plugin install enonic-skills@enonic-marketplace
-```
-
-This makes every skill in the plugin available in your Claude Code sessions.
-
-### Scopes
-
-| Scope          | Command                                                            | Use case                |
-|----------------|--------------------------------------------------------------------|-------------------------|
-| User (default) | `/plugin install enonic-skills@enonic-marketplace`                 | Personal — all projects |
-| Project        | `/plugin install enonic-skills@enonic-marketplace --scope project` | Team — shared via Git   |
-| Local          | `/plugin install enonic-skills@enonic-marketplace --scope local`   | Project — gitignored    |
 
 ### Codex
 
-Install a skill directly from this GitHub repo into `~/.codex/skills`:
-
-```bash
-python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
-  --repo enonic/ai-enonic-marketplace \
-  --path plugins/enonic-skills/skills/<skill-name>
+```text
+codex plugin marketplace add enonic/agent-toolkit
+codex plugin add enonic@enonic-agent-toolkit
 ```
 
-Only skills whose frontmatter includes `Codex` in the `compatibility` field are supported on Codex.
+Start a new thread so Codex discovers the plugin's skills.
 
-## Repository Layout
+### GitHub Copilot
 
+GitHub CLI 2.90.0 or newer installs all three skills into Copilot's user scope:
+
+```text
+gh skill install enonic/agent-toolkit --all --agent github-copilot --scope user
 ```
-.claude-plugin/marketplace.json       # Marketplace registry
+
+### Gemini CLI
+
+Install all three skills from the repository's canonical skill directory. Review the displayed skills and approve the installation:
+
+```text
+gemini skills install https://github.com/enonic/agent-toolkit --path plugins/enonic/skills
+```
+
+Run `gemini skills list` to verify discovery.
+
+Upgrading Claude Code or Codex from a version before 0.5.0 requires removing the old installation first; follow
+[MIGRATION.md](MIGRATION.md) for recoverable, client-specific steps.
+
+## Repository layout
+
+```text
+.claude-plugin/marketplace.json       Claude Code marketplace
+.agents/plugins/marketplace.json      Codex marketplace
 plugins/
-  enonic-skills/
-    .claude-plugin/plugin.json        # Plugin manifest
-    skills/                           # Skill directories live here
-      <skill-name>/
-        SKILL.md                      # Required — frontmatter + instructions
-        references/                   # Optional — additional documentation
-        scripts/                      # Optional — executable code
-        assets/                       # Optional — templates, images, data files
+  enonic/
+    .claude-plugin/plugin.json        Claude Code plugin manifest
+    .codex-plugin/plugin.json         Codex plugin manifest
+    skills/                           Canonical shared skill content
 ```
 
-The marketplace is nested so additional plugins can be added under `plugins/` without restructuring.
+The plugin is self-contained because plugin clients may cache only the selected package directory. Both manifests point to the same
+`plugins/enonic/skills/` directory inside the package.
 
-Each `SKILL.md` is a YAML frontmatter block followed by Markdown instructions:
+Developer-facing CMS skills belong in the foundational `enonic` plugin. A future `cloud` or other capability-based plugin should be added only
+when it has a distinct audience and substantive skills; there are no placeholder plugins or aggregate `all` plugin.
 
-```markdown
----
-name: example-skill
-description: Does X when the user asks for Y.
-compatibility: Claude Code, Codex
----
+## Development
 
-## Steps
+Install the pinned validation dependencies:
 
-1. First, do this.
-2. Then, do that.
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install --requirement requirements-dev.txt
+npm ci
 ```
 
-See the [Agent Skills specification](https://agentskills.io/specification) for the full frontmatter reference, and `AGENTS.md` in this repo
-for the cross-agent writing convention used here.
+Run repository, Agent Skills, and Claude Code checks, then test installation for every supported client:
 
-## Available Skills
+```sh
+PATH="$PWD/.venv/bin:$PATH" CLAUDE_BIN="$PWD/node_modules/.bin/claude" npm run validate
+CODEX_BIN="$PWD/node_modules/.bin/codex" npm run validate:codex
+npm run validate:copilot
+GEMINI_BIN="$PWD/node_modules/.bin/gemini" npm run validate:gemini
+```
 
-| Skill                                                            | Description                                                                                                                                                                                       | Agent              | Category    |
-|------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|-------------|
-| [xp-app-upgrader](plugins/enonic-skills/skills/xp-app-upgrader/) | Upgrade an Enonic XP application from XP 7 to XP 8 — descriptor conversion via `xp8migrator`, build-system reorganization (settings plugin, `xplibs.*` catalog), code-level breaking changes.     | Claude Code, Codex | Development |
-| [xp-app-debugger](plugins/enonic-skills/skills/xp-app-debugger/) | Debug XP application errors — build failures (Gradle, TypeScript) and server runtime errors (Nashorn/JS stack traces in `server.log`).                                                            | Claude Code        | Development |
-| [enonic-cli](plugins/enonic-skills/skills/enonic-cli/)           | Reference for the Enonic CLI (`enonic` command) — project creation, sandbox management, data export/import, snapshots, dumps, application lifecycle, cloud deployment, and server administration. | Claude Code, Codex | Development |
-
-## Creating a Skill
-
-1. Create a directory under `plugins/enonic-skills/skills/` matching the skill name.
-2. Add a `SKILL.md` with required `name` and `description` frontmatter.
-3. Write Markdown instructions in the body (keep under 500 lines).
-4. Optionally add `scripts/`, `references/`, or `assets/` subdirectories.
-5. Update the "Available Skills" table above.
-
-For multi-agent skills, follow the writing convention in `AGENTS.md` — generic action verbs with the agent-specific tool name in
-parentheses (e.g. "edit the file (`Edit` tool in Claude Code)").
-
-## Releasing
-
-1. Ensure you're on `master` with a clean working tree.
-2. Bump the version in both `.claude-plugin/marketplace.json` and `plugins/enonic-skills/.claude-plugin/plugin.json`.
-3. Commit: `git commit -m "Release vX.Y.Z"`.
-4. Tag: `git tag vX.Y.Z`.
-5. Push: `git push && git push --tags`.
+Pull requests run all checks in GitHub Actions. The manual release workflow accepts an exact version only on `master`, reruns every
+check, verifies all manifest versions and the tag's absence, and then creates the tag and GitHub release.
 
 ## License
 
-[MIT](LICENSE)
+[Apache License 2.0](LICENSE)

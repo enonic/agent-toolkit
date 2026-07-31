@@ -1,0 +1,39 @@
+{
+  "name": "enonic",
+  "version": "0.5.0",
+  "description": "Skills for Enonic XP application development and operations",
+  "author": {
+    "name": "Enonic",
+    "email": "hello@enonic.com",
+    "url": "https://www.enonic.com"
+  },
+  "homepage": "https://github.com/enonic/agent-toolkit",
+  "repository": "https://github.com/enonic/agent-toolkit",
+  "keywords": [
+    "skills",
+    "enonic",
+    "enonic xp",
+    "xp",
+    "xp app",
+    "application"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Enonic XP",
+    "shortDescription": "Build, upgrade, and troubleshoot Enonic XP apps",
+    "longDescription": "Skills for Enonic XP application development, migration, debugging, and command-line operations.",
+    "developerName": "Enonic",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://www.enonic.com",
+    "defaultPrompt": [
+      "Upgrade this Enonic XP 7 app to XP 8.",
+      "Diagnose this Enonic XP application error.",
+      "Help me use the Enonic CLI."
+    ],
+    "brandColor": "#FF5A5F"
+  }
+}

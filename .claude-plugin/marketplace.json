@@ -1,8 +1,8 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "enonic-marketplace",
+  "name": "enonic-agent-toolkit",
   "metadata": {
-    "description": "Enonic's marketplace of Claude Code plugins"
+    "description": "Enonic agent plugins for XP application development"
   },
   "owner": {
     "name": "Enonic",
@@ -10,10 +10,10 @@
   },
   "plugins": [
     {
-      "name": "enonic-skills",
-      "source": "./plugins/enonic-skills",
-      "description": "Agent skills for Enonic XP application development",
-      "version": "0.4.0",
+      "name": "enonic",
+      "source": "./plugins/enonic",
+      "description": "Skills for Enonic XP application development and operations",
+      "version": "0.5.0",
       "author": {
         "name": "Enonic",
         "email": "hello@enonic.com"

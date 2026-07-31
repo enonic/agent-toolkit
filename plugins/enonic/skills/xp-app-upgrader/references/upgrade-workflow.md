@@ -1,20 +1,4 @@
----
-name: xp-app-upgrader
-description: >
-  Use when upgrading or migrating an Enonic XP 7 application to XP 8 —
-  converting descriptors (application.xml, site.xml,
-  parts/layouts/pages/content-types, admin tools, APIs, services, webapp) to
-  the new YAML `kind:` format, bumping `xpVersion` and the `com.enonic.xp.app`
-  Gradle plugin to 4.x, or finishing/fixing partial xp8migrator runs. Also
-  triggers on post-upgrade XP 8 deployment errors. Skip for brand-new XP 8
-  apps and for upgrades between XP 7.x minor versions.
-license: MIT
-compatibility: Claude Code, Codex
-allowed-tools: Bash(command -v enonic) Bash(enonic:*) Bash(./gradlew:*) Bash(gradle:*) Bash(ls:*) Bash(find:*) Bash(grep:*) Bash(cat:*) Bash(mv:*) Bash(rm:*) Bash(curl:*) Bash(wget:*) Bash(brew:*) Bash(npm:*) Bash(./migrator:*) WebFetch(domain:raw.githubusercontent.com) WebFetch(domain:repo.enonic.com) Read Write Edit
-metadata:
-  author: enonic
-  xp-version: "7.x → 8.x"
----
+# XP 7 to XP 8 upgrade workflow
 
 ## What this skill does
 
@@ -71,8 +55,8 @@ version, and whether to boot a server. That is how a deploy ends up on the wrong
 server that hangs the whole session.
 
 The rule: **run the CLI non-interactively, but never let `-f` make a choice the user would want to make.** Before any command that would
-prompt for a consequential value, work out what it would ask, surface those questions to the user (an `AskUserQuestion`-style choice in
-Claude Code), then run it non-interactively with the answers passed as **explicit flags** — using `-f` only to suppress prompts whose
+prompt for a consequential value, work out what it would ask, surface those questions to the user, then run it non-interactively with the
+answers passed as **explicit flags** — using `-f` only to suppress prompts whose
 answers you have already pinned. `-f` means "don't ask me"; only reach for it once you (with the user) have answered everything it would
 have asked. Per command:
 
@@ -82,7 +66,7 @@ have asked. Per command:
 - **`enonic project deploy <sandbox>`** — has two consequential prompts: *which sandbox* and *start it now?*. Always name the sandbox
   explicitly (never let `-f` choose — see step 7). Starting the sandbox launches a **long-running foreground XP server** that will hang the
   agent shell, so settle the start behaviour with the user first: `--skip-start` to only stage the JAR into a sandbox they will start
-  themselves, or run the start detached / in the background (`run_in_background` in Claude Code) when they want a live runtime to inspect.
+  themselves, or run the start detached or in the background when they want a live runtime to inspect.
 
 ## Workflow (must follow in order)
 
@@ -218,11 +202,9 @@ curl -fsSL https://raw.githubusercontent.com/enonic/xp8migrator/main/migrator-in
 ./migrator -e overwrite         # non-interactive — overwrite any pre-existing target files
 ```
 
-> ⚠️ **Flag this to the user before running it.** The `curl … | sh` install pipes a remote script straight into a shell, which Claude's
-> security constraints block in auto / auto-accept (headless) mode — it only runs when the user is present to approve it. Tell the user up
-> front that in auto mode this step will fail, and offer them the choice: run the installer themselves (suggest typing
-> `! curl -fsSL https://raw.githubusercontent.com/enonic/xp8migrator/main/migrator-install.sh | sh` in the prompt) or approve it
-> interactively. Once `./migrator` exists in the project root, the rest of the descriptor pass proceeds normally.
+> ⚠️ **Flag this to the user before running it.** The `curl … | sh` install pipes a remote script straight into a shell and requires
+> explicit user approval. Offer the user a choice between running the installer themselves or approving it interactively. Once
+> `./migrator` exists in the project root, the rest of the descriptor pass proceeds normally.
 
 If the migrator errors out, run `./migrator -h` to inspect the available flags. **Don't run the migrator a second time with `-x`** — its
 post-migration step tries to move `cms/style/style.yaml` again and fails with `FileAlreadyExistsException`. Cleanup of the original XML
@@ -241,7 +223,7 @@ If `xp8migrator` is unavailable (offline environment, descriptor not handled by 
 
 **Build / code pass (hand-edits):**
 
-Edit the files in-place (`Edit` tool in Claude Code) for changes to `build.gradle`, `gradle.properties`, and any controller/template
+Edit the files in-place for changes to `build.gradle`, `gradle.properties`, and any controller/template
 fixes. Keep edits minimal — don't reformat unrelated lines, don't change content the user didn't approve.
 
 ### 5. Validate (before any deletion)
@@ -316,7 +298,7 @@ enonic sandbox list      # read-only — sandboxes + distro versions; the runnin
    sandbox and **attach to a long-running foreground XP server that hangs the agent shell**. Ask the user which they want:
     - `enonic project deploy <sandbox> --skip-start -f` — builds and stages the JAR into the sandbox without starting it (no live runtime,
       but the shell returns immediately); or
-    - `enonic project deploy <sandbox> -f` run **in the background** (`run_in_background` in Claude Code) — when they want a live runtime to
+    - `enonic project deploy <sandbox> -f` run **in the background** — when they want a live runtime to
       poke at. Read the command's own output to report startup; do not otherwise probe the server (see below).
 
 Always name the sandbox explicitly. Reach for `-f` only after the sandbox and start behaviour are pinned — it is there to suppress the

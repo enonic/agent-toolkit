@@ -19,7 +19,7 @@ STALE_NAMES = (
     "enonic-" + "marketplace",
     "enonic-" + "skills",
 )
-STALE_ALLOWED = {"CHANGELOG.md", "MIGRATION.md"}
+STALE_ALLOWED = {"MIGRATION.md"}
 CLIENT_WORDING = re.compile(
     r"compatibility:\s*.*(?:Claude|Codex)|"
     r"\b(?:Claude Code|Codex)\b|AskUserQuestion|run_in_background|"

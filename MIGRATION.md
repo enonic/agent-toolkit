@@ -2,9 +2,9 @@
 
 Version 0.5.0 is a pre-1.0 packaging break. The repository changes from `enonic/ai-enonic-marketplace` to
 `enonic/agent-toolkit`, the marketplace changes from `enonic-marketplace` to `enonic-agent-toolkit`, and the plugin changes from
-`enonic-skills` to `xp`.
+`enonic-skills` to `enonic`.
 
-The scope is preserved: `enonic-cli`, `xp-app-debugger`, and `xp-app-upgrader` remain available. The new `xp` package is shared by Claude
+The scope is preserved: `enonic-cli`, `xp-app-debugger`, and `xp-app-upgrader` remain available. The new `enonic` package is shared by Claude
 Code and Codex; GitHub Copilot and Gemini CLI can install the same canonical skill content natively.
 
 ## Who needs to migrate
@@ -23,7 +23,7 @@ Removing `enonic-marketplace` also removes the plugin installed from it:
 ```text
 /plugin marketplace remove enonic-marketplace
 /plugin marketplace add enonic/agent-toolkit
-/plugin install xp@enonic-agent-toolkit
+/plugin install enonic@enonic-agent-toolkit
 /reload-plugins
 ```
 
@@ -39,17 +39,17 @@ the skills search path. Do not delete the backup until the native plugin is veri
 
 ```text
 codex plugin marketplace add enonic/agent-toolkit
-codex plugin add xp@enonic-agent-toolkit
+codex plugin add enonic@enonic-agent-toolkit
 ```
 
 Start a new thread so Codex discovers the plugin skills.
 
-To roll back, remove the `xp` plugin and renamed marketplace, restore the backed-up skill directories, and start another new thread.
+To roll back, remove the `enonic` plugin and renamed marketplace, restore the backed-up skill directories, and start another new thread.
 
 ## Verify
 
 In a new session or thread, confirm that `enonic-cli`, `xp-app-debugger`, and `xp-app-upgrader` are discoverable. Claude Code and Codex
-should report them from `xp@enonic-agent-toolkit`; Copilot and Gemini install them as native skills. If one is missing, reload or restart
+should report them from `enonic@enonic-agent-toolkit`; Copilot and Gemini install them as native skills. If one is missing, reload or restart
 the client and begin another new session.
 
-No legacy alias or aggregate `all` plugin is retained. v0.5.0 installs only `xp`.
+No legacy alias or aggregate `all` plugin is retained. v0.5.0 installs only `enonic`.

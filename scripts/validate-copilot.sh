@@ -15,7 +15,7 @@ if ! "$gh_bin" skill --help >/dev/null 2>&1; then
 fi
 
 for skill in enonic-cli xp-app-debugger xp-app-upgrader; do
-  "$gh_bin" skill install "$repo_root/plugins/xp/skills/$skill" \
+  "$gh_bin" skill install "$repo_root/plugins/enonic/skills/$skill" \
     --from-local \
     --all \
     --agent github-copilot \

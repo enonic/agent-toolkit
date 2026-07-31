@@ -5,10 +5,10 @@
   },
   "plugins": [
     {
-      "name": "xp",
+      "name": "enonic",
       "source": {
         "source": "local",
-        "path": "./plugins/xp"
+        "path": "./plugins/enonic"
       },
       "policy": {
         "installation": "AVAILABLE",

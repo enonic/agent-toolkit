@@ -9,7 +9,7 @@ trap 'rm -rf "$test_root"' EXIT
 export HOME="$test_root/home"
 mkdir -p "$HOME"
 
-"$gemini_bin" skills install "$repo_root/plugins/xp/skills" \
+"$gemini_bin" skills install "$repo_root/plugins/enonic/skills" \
   --scope user \
   --consent
 

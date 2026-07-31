@@ -1,13 +1,13 @@
 # Agent toolkit contribution instructions
 
-This repository publishes shared Agent Skills for Enonic products. Version 0.5.0 contains the self-contained `plugins/xp/` package for
+This repository publishes shared Agent Skills for Enonic products. Version 0.5.0 contains the self-contained `plugins/enonic/` package for
 Claude Code and Codex, with the same skill directories installable by GitHub Copilot and Gemini CLI.
 
 ## Plugin structure
 
-- Keep canonical skill content under `plugins/xp/skills/`; do not duplicate skills per client.
-- Keep both plugin manifests inside `plugins/xp/` and both marketplace registries synchronized.
-- The plugin name is `xp`, the marketplace name is `enonic-agent-toolkit`, and repository links use
+- Keep canonical skill content under `plugins/enonic/skills/`; do not duplicate skills per client.
+- Keep both plugin manifests inside `plugins/enonic/` and both marketplace registries synchronized.
+- The plugin name is `enonic`, the marketplace name is `enonic-agent-toolkit`, and repository links use
   `https://github.com/enonic/agent-toolkit`.
 - Bump the Claude marketplace and both plugin manifest versions together.
 - Keep licensing in the repository-level `LICENSE` file rather than duplicating license metadata across packaged files.

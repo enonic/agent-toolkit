@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PLUGIN = ROOT / "plugins" / "xp"
+PLUGIN = ROOT / "plugins" / "enonic"
 SKILLS = PLUGIN / "skills"
 VERSION = "0.5.0"
 REPOSITORY = "https://github.com/enonic/agent-toolkit"
@@ -48,8 +48,8 @@ if codex_market.get("name") != "enonic-agent-toolkit":
     errors.append("Codex marketplace name must be enonic-agent-toolkit")
 
 for label, manifest in (("Claude", claude_plugin), ("Codex", codex_plugin)):
-    if manifest.get("name") != "xp":
-        errors.append(f"{label} plugin name must be xp")
+    if manifest.get("name") != "enonic":
+        errors.append(f"{label} plugin name must be enonic")
     if manifest.get("version") != VERSION:
         errors.append(f"{label} plugin version must be {VERSION}")
     if manifest.get("repository") != REPOSITORY:
@@ -62,7 +62,7 @@ if len(claude_entries) != 1:
     errors.append("Claude marketplace must contain exactly one plugin")
 else:
     entry = claude_entries[0]
-    expected = {"name": "xp", "source": "./plugins/xp", "version": VERSION}
+    expected = {"name": "enonic", "source": "./plugins/enonic", "version": VERSION}
     for key, value in expected.items():
         if entry.get(key) != value:
             errors.append(f"Claude marketplace plugin {key} must be {value}")
@@ -72,10 +72,10 @@ if len(codex_entries) != 1:
     errors.append("Codex marketplace must contain exactly one plugin")
 else:
     entry = codex_entries[0]
-    if entry.get("name") != "xp":
-        errors.append("Codex marketplace plugin name must be xp")
-    if entry.get("source") != {"source": "local", "path": "./plugins/xp"}:
-        errors.append("Codex marketplace source must be local ./plugins/xp")
+    if entry.get("name") != "enonic":
+        errors.append("Codex marketplace plugin name must be enonic")
+    if entry.get("source") != {"source": "local", "path": "./plugins/enonic"}:
+        errors.append("Codex marketplace source must be local ./plugins/enonic")
     if entry.get("policy") != {
         "installation": "AVAILABLE",
         "authentication": "ON_INSTALL",

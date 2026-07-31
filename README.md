@@ -1,15 +1,15 @@
 # Enonic Agent Toolkit
 
-Shared [Agent Skills](https://agentskills.io/specification) for Enonic XP. Claude Code and Codex install them through the `xp` plugin;
+Shared [Agent Skills](https://agentskills.io/specification) for Enonic XP. Claude Code and Codex install them through the `enonic` plugin;
 GitHub Copilot and Gemini CLI install the same canonical skill directories natively.
 
 Version 0.5.0 provides the same three skills to all four supported clients:
 
 | Skill | Purpose |
 |---|---|
-| [enonic-cli](plugins/xp/skills/enonic-cli/) | Use the `enonic` command for projects, sandboxes, data, apps, cloud deployment, and server administration. |
-| [xp-app-debugger](plugins/xp/skills/xp-app-debugger/) | Diagnose Enonic XP build failures and server runtime errors. |
-| [xp-app-upgrader](plugins/xp/skills/xp-app-upgrader/) | Upgrade Enonic XP 7 applications to XP 8. |
+| [enonic-cli](plugins/enonic/skills/enonic-cli/) | Use the `enonic` command for projects, sandboxes, data, apps, cloud deployment, and server administration. |
+| [xp-app-debugger](plugins/enonic/skills/xp-app-debugger/) | Diagnose Enonic XP build failures and server runtime errors. |
+| [xp-app-upgrader](plugins/enonic/skills/xp-app-upgrader/) | Upgrade Enonic XP 7 applications to XP 8. |
 
 ## Installation
 
@@ -17,7 +17,7 @@ Version 0.5.0 provides the same three skills to all four supported clients:
 
 ```text
 /plugin marketplace add enonic/agent-toolkit
-/plugin install xp@enonic-agent-toolkit
+/plugin install enonic@enonic-agent-toolkit
 /reload-plugins
 ```
 
@@ -25,7 +25,7 @@ Version 0.5.0 provides the same three skills to all four supported clients:
 
 ```text
 codex plugin marketplace add enonic/agent-toolkit
-codex plugin add xp@enonic-agent-toolkit
+codex plugin add enonic@enonic-agent-toolkit
 ```
 
 Start a new thread so Codex discovers the plugin's skills.
@@ -43,7 +43,7 @@ gh skill install enonic/agent-toolkit --all --agent github-copilot --scope user
 Install all three skills from the repository's canonical skill directory. Review the displayed skills and approve the installation:
 
 ```text
-gemini skills install https://github.com/enonic/agent-toolkit --path plugins/xp/skills
+gemini skills install https://github.com/enonic/agent-toolkit --path plugins/enonic/skills
 ```
 
 Run `gemini skills list` to verify discovery.
@@ -57,16 +57,16 @@ Upgrading Claude Code or Codex from a version before 0.5.0 requires removing the
 .claude-plugin/marketplace.json       Claude Code marketplace
 .agents/plugins/marketplace.json      Codex marketplace
 plugins/
-  xp/
+  enonic/
     .claude-plugin/plugin.json        Claude Code plugin manifest
     .codex-plugin/plugin.json         Codex plugin manifest
     skills/                           Canonical shared skill content
 ```
 
 The plugin is self-contained because plugin clients may cache only the selected package directory. Both manifests point to the same
-`plugins/xp/skills/` directory inside the package.
+`plugins/enonic/skills/` directory inside the package.
 
-Developer-facing CMS skills belong in the foundational `xp` plugin. A future `cloud` or other capability-based plugin should be added only
+Developer-facing CMS skills belong in the foundational `enonic` plugin. A future `cloud` or other capability-based plugin should be added only
 when it has a distinct audience and substantive skills; there are no placeholder plugins or aggregate `all` plugin.
 
 ## Development

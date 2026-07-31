@@ -10,8 +10,8 @@
   },
   "plugins": [
     {
-      "name": "xp",
-      "source": "./plugins/xp",
+      "name": "enonic",
+      "source": "./plugins/enonic",
       "description": "Skills for Enonic XP application development and operations",
       "version": "0.5.0",
       "author": {

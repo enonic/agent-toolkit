@@ -4,7 +4,7 @@
 
 - Renamed `enonic/ai-enonic-marketplace` to `enonic/agent-toolkit`.
 - Renamed `enonic-marketplace` to `enonic-agent-toolkit`.
-- Replaced `enonic-skills` with one self-contained `xp` plugin for Claude Code and Codex.
+- Replaced `enonic-skills` with one self-contained `enonic` plugin for Claude Code and Codex.
 - Added native installation and discovery support for GitHub Copilot and Gemini CLI.
 - Made all three skills identical and portable across all four supported clients.
 - Removed client compatibility metadata and implicit tool approvals.

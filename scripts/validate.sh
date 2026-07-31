@@ -14,7 +14,7 @@ else
   exit 1
 fi
 
-for skill in plugins/xp/skills/*; do
+for skill in plugins/enonic/skills/*; do
   "$skills_validator" validate "$skill"
 done
 

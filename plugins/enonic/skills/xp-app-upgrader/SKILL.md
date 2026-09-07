@@ -7,8 +7,10 @@ description: >
   the new YAML `kind:` format, bumping `xpVersion` and the `com.enonic.xp.app`
   Gradle plugin to 4.x, or finishing/fixing partial xp8migrator runs. Also
   triggers on post-upgrade XP 8 deployment errors. Skip for brand-new XP 8
-  apps and for upgrades between XP 7.x minor versions.
-allowed-tools: Bash(command -v enonic) Bash(enonic:*) Bash(./gradlew:*) Bash(gradle:*) Bash(ls:*) Bash(find:*) Bash(grep:*) Bash(cat:*) Bash(mv:*) Bash(rm:*) Bash(curl:*) Bash(wget:*) Bash(brew:*) Bash(npm:*) Bash(./migrator:*) WebFetch(domain:raw.githubusercontent.com) WebFetch(domain:repo.enonic.com) Read Write Edit
+  apps, for upgrades between XP 7.x minor versions, and for upgrades between
+  XP 8.x releases (a version bump; see the XP 8 upgrade notes on the
+  developer portal).
+allowed-tools: Bash(command -v enonic) Bash(enonic:*) Bash(./gradlew:*) Bash(gradle:*) Bash(ls:*) Bash(find:*) Bash(grep:*) Bash(cat:*) Bash(mv:*) Bash(rm:*) Bash(curl:*) Bash(wget:*) Bash(brew:*) Bash(npm:*) Bash(./migrator:*) WebFetch(domain:developer.enonic.com) WebFetch(domain:repo.enonic.com) Read Write Edit
 metadata:
   author: enonic
   xp-version: "7.x → 8.x"

@@ -9,7 +9,7 @@ Version 0.5.0 provides the same three skills to all four supported clients:
 |---|---|
 | [enonic-cli](plugins/enonic/skills/enonic-cli/) | Use the `enonic` command for projects, sandboxes, data, apps, cloud deployment, and server administration. |
 | [xp-app-debugger](plugins/enonic/skills/xp-app-debugger/) | Diagnose Enonic XP build failures and server runtime errors. |
-| [xp-app-upgrader](plugins/enonic/skills/xp-app-upgrader/) | Upgrade Enonic XP 7 applications to XP 8. |
+| [xp-app-upgrader](plugins/enonic/skills/xp-app-upgrader/) | Upgrade Enonic applications from XP 7 to XP 8 or between XP 8 releases using version-specific documentation. |
 
 ## Installation
 

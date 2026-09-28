@@ -2,15 +2,19 @@
 
 ## What this skill does
 
-Upgrades a single XP application's source tree from XP 7 to XP 8. Out of scope: dumping/loading content data between XP 7 and XP 8
-instances (covered briefly at <https://raw.githubusercontent.com/enonic/doc-xp/refs/heads/8.0/docs/release/upgrade.adoc>), and
+This workflow is for a single XP application's source tree coming from XP 7. For an app already on XP 8, use the iterative-upgrade path
+in `../SKILL.md` instead. First use that entry point's documentation map to read the XP 7 baseline guide and any subsequent release notes
+through the target version. Include their applicable changes in inventory and planning, not only in post-upgrade follow-up.
+
+Out of scope: dumping/loading content data between XP 7 and XP 8
+instances (covered briefly at <https://developer.enonic.com/docs/platform/stable/upgrade/xp7>), and
 upgrading 3rd-party market apps (replace those with their XP 8 versions yourself).
 
 The skill leans on the official [`xp8migrator`](https://github.com/enonic/xp8migrator) tool for descriptor conversion (`application.xml`,
 the entire `site/` tree, admin tools, APIs, webapp → YAML with `kind:`) and only does the things the migrator doesn't handle by hand:
 build-system reorganization (settings plugin, `xplibs.*` catalog, `gradle.properties` flow), TypeScript/bundler config, code-level breaking
 changes, `logback.xml`, and post-migration cleanup of the orphaned `site/` directory. See
-<https://raw.githubusercontent.com/enonic/doc-code/refs/heads/master/docs/upgrade.adoc> for the upstream
+<https://developer.enonic.com/docs/code/stable/upgrade/xp7> for the upstream
 Enonic upgrade guide (source of truth for descriptor shapes and breaking-change lists), `references/manual-schemes-migration.md` for the
 full set of transformations the migrator performs, and `references/examples.md` for the full `xplibs.*` alias tables, worked `build.gradle`
 examples, and TypeScript wiring.
@@ -84,6 +88,7 @@ about to do and why, so the user always knows what's happening without having to
 5. Validate    → run `enonic project build` BEFORE any cleanup (so a failure leaves the originals intact for diagnosis)
 6. Cleanup     → only after the build is green AND the user confirms: `rm -rf src/main/resources/site` and delete `application.xml`
 7. Deploy      → offer `enonic project deploy` to a sandbox and run it only after the user confirms
+8. Follow-up   → report any optional modernization deferred from the release notes reviewed during planning
 ```
 
 ### 1. Detect
@@ -120,6 +125,10 @@ Don't assume only one of these. A single app can be all three (site app + admin 
 
 ### 2. Inventory
 
+Review the applicable official upgrade notes selected through `../SKILL.md`. Inventory required and feature-dependent changes through
+the target version, including Java API changes if the app has Java sources. Keep optional modernization separate. The categories below
+are a starting point for the XP 7 migration, not an exhaustive replacement for the current documentation.
+
 Build a list of every file that needs to change. Group by category — the user will scan this in step 3, and a flat dump of 50 file paths is
 unreadable. Categories:
 
@@ -145,6 +154,9 @@ unreadable. Categories:
 Present the plan as a numbered checklist grouped by category. For each item state **what** changes and **why** in one line. Then ask the
 user to approve, modify, or skip individual items. Wait for explicit approval before any write.
 
+State the current and target XP versions and link the documentation used. When targeting a later XP 8 release, include its required and
+applicable conditional changes here. The example below illustrates the baseline migration; extend it with the selected release notes.
+
 The user can grant approval up-front in the same turn as the original request (e.g. "show plan then apply", "go ahead and fix it", "do
 whatever it takes"). Treat that as approval — show the plan and proceed straight into execution. Pause for a fresh confirmation only when
 the request was open-ended ("what do I need to change?", "can you upgrade this?") without an explicit "go ahead".
@@ -169,7 +181,7 @@ Detected: JS site app, xpVersion 7.9.0, plugin 3.6.2, no settings plugin, `app{}
 3. `build.gradle` — omit the `app { }` block (the verified XP 8 reference apps don't carry it). Keep `app { createDefaultDevTask = false }` only if the project's `dev` task differs from the plugin default (which runs `deploy --continuous -Penv=dev`) — e.g. a real `NpmTask` watch. If the existing `dev` task just reproduces the default, drop it and use the auto-registered one (see "Build files").
 4. `build.gradle` — migrate Enonic library dependencies from `"com.enonic.xp:lib-X:${xpVersion}"` to `xplibs.X`. **Pure 1:1 rename — migrate every `include` as-is; never drop one as "unused" (XP `include`s aren't transitive, so app-source greps can't prove a dep unused; pruning is out of scope — see "Build files").**
 5. `gradle/libs.versions.toml` (new file) — extract third-party `com.enonic.lib:*` deps (e.g. `lib-thymeleaf`, `lib-xslt`, `lib-asset`, `lib-static`) into a Gradle version catalog, and reference them as `libs.<alias>` in `build.gradle`. Skip if the app has zero or one such dep.
-6. `gradle.properties` — bump `xpVersion` to the highest XP 8 version available (prefer stable; fall back to alpha/beta like `8.0.0-A3` / `8.0.0-B1`; `-SNAPSHOT` only as a last resort). Add `projectName` if missing (used by `settings.gradle`); leave `appName`/`version`/`group` in place. Display/vendor metadata moves to `enonic.yaml` (see *Application descriptor*).
+6. `gradle.properties` — set `xpVersion` to the selected, published target (respect the user's requested version; otherwise prefer the latest stable XP 8 release). Add `projectName` if missing (used by `settings.gradle`); leave `appName`/`version`/`group` in place. Display/vendor metadata moves to `enonic.yaml` (see *Application descriptor*).
 7. `gradle/wrapper/gradle-wrapper.properties` — bump Gradle to 9.4.1 (plugin 4.x requires Gradle 9+). Run via `./gradlew wrapper --gradle-version 9.4.1`.
 
 ### Descriptors (run xp8migrator)
@@ -312,9 +324,17 @@ don't tail `server.log`, don't grep XP_HOME. Once the sandbox reports started, h
 
 The user inspects the running app from there. If they hit a runtime/load error and want help, hand off to the `xp-app-debugger` skill.
 
+### 8. Follow-up
+
+Summarize optional modernization deferred from the documentation reviewed during inventory and planning. List only items the app
+actually uses and link the relevant release section for before/after examples. Offer this work separately unless the user already
+requested it. Required changes and requirements for the selected runtime or features belong in the upgrade itself, before validation
+and deployment; do not defer them here.
+
 ## What changes between XP 7 and XP 8
 
-This is the canonical change set. Apply only the items that exist in the user's app — don't invent files.
+This is a supporting change reference. The official documentation for the selected target is the technical authority, as described in
+`../SKILL.md`; verify these examples against it. Apply only the items that exist in the user's app — don't invent files.
 
 > **Verify the public API of any XP `lib-*` before editing JS/Java that calls it.** This skill's lists of removed/renamed functions are a
 > starting point, not the source of truth — they may be incomplete or out of date. Library APIs evolve between XP 8 pre-releases. Before
@@ -520,18 +540,22 @@ Use the highest version that listing actually shows; it may lag the XP runtime v
    convention to a different JDK version. Setting `sourceCompatibility`/`targetCompatibility` is also unnecessary — the toolchain handles
    both.
 
-**`gradle.properties`:** bump `xpVersion` to the highest XP 8 version actually available, preferring **stable** over pre-release over
-snapshot:
+**`gradle.properties`:** set `xpVersion` to the selected target, verifying it is published. Respect an explicit user target; when no target
+was supplied, choose a published stable XP 8 release. Verify artifact availability separately from documentation. Use `stable` documentation
+unless the developer explicitly instructs you to use `next`; an upcoming target alone does not authorize that switch. Release channels
+resolve as follows:
 
-1. **Stable release** (e.g. `8.0.0`, `8.0.1`) — use this if any final XP 8 release exists. Check
+1. **Stable release** (e.g. `8.0.0`, `8.0.1`) — verify the selected release exists. Check
    <https://repo.enonic.com/public/com/enonic/xp/core-api/>.
-2. **Pre-release** (alpha / beta, e.g. `8.0.0-A3`, `8.0.0-B1`) — use the highest one published to the release repo if no stable exists.
-3. **Snapshot** (e.g. `8.0.0-SNAPSHOT`) — only as a last resort, when nothing else is published. Snapshots resolve only through
+2. **Pre-release** (alpha / beta, e.g. `8.0.0-A3`, `8.0.0-B1`) — verify the requested pre-release is published to the release repo.
+3. **Snapshot** (e.g. `8.0.0-SNAPSHOT`) — use only when the requested target includes snapshot builds. Snapshots resolve only through
    `xp.enonicRepo("dev")` (the same dev-channel swap the *Migrate dependencies* edit covers), so they work but move under your feet between
    rebuilds.
 
+If the requested target is unavailable, report that limitation rather than silently substituting a different version or release channel.
+
 If the user is on the very old `7.x` series (< 7.16), warn that XP recommends going through 7.16.x first (see the
-[instance upgrade guide](https://raw.githubusercontent.com/enonic/doc-xp/refs/heads/8.0/docs/release/upgrade.adoc)) — but the source-level
+[instance upgrade guide](https://developer.enonic.com/docs/platform/stable/upgrade/xp7)) — but the source-level
 edits are the same. Add `projectName = …` if missing (`settings.gradle` reads it); keep `appName`, `version`, `group` (still consumed by
 Gradle). Display/vendor metadata (`appDisplayName`, `vendorName`, `vendorUrl`, and the legacy unprefixed `displayName`) is handled in the
 *Application descriptor* section below — it moves into `enonic.yaml`.
@@ -573,7 +597,7 @@ the class is in the `com.enonic.xp:testing` jar (already on the test classpath a
 `src/main/resources/application.xml` → `enonic.yaml` (handled by `xp8migrator`; XML is no longer recognized in XP 8).
 `kind: "Application"` is mandatory — missing it fails deployment with `Invalid kind "null". Expected "Application"`. See
 `references/manual-schemes-migration.md` §6.1 for the exact field map and
-<https://raw.githubusercontent.com/enonic/doc-code/refs/heads/master/docs/upgrade.adoc> for an XP 7 → XP 8 example.
+<https://developer.enonic.com/docs/code/stable/upgrade/xp7> for an XP 7 → XP 8 example.
 
 **Metadata flow.** The migrator pulls `appDisplayName` / `vendorName` / `vendorUrl` from `gradle.properties` and writes them into
 `enonic.yaml` (as `title` / `vendorName` / `vendorUrl`). Two pre-migrator fixups in real XP 7 apps:
@@ -713,7 +737,7 @@ show `apis/asset/...` regardless of which lib contributed the descriptor.
 
 If the project repo contains server-config files (most commonly a `logback.xml` — remove `<withJansi>true</withJansi>` to avoid a startup
 error), apply the changes documented at
-<https://raw.githubusercontent.com/enonic/doc-xp/refs/heads/8.0/docs/release/upgrade.adoc>. That guide also covers data migration
+<https://developer.enonic.com/docs/platform/stable/upgrade/xp7>. That guide also covers data migration
 (`dump`/`load`), Management API breaking changes, security (`xp.suPassword`, password hashing), and the default
 `com.enonic.cms.default` repo behavior change.
 
@@ -736,13 +760,14 @@ error), apply the changes documented at
 
 ## See also
 
-- <https://raw.githubusercontent.com/enonic/doc-code/refs/heads/master/docs/upgrade.adoc> — upstream Enonic XP 7 → XP 8 app upgrade guide (
-  source of truth)
+- <https://developer.enonic.com/docs/code/stable/upgrade/xp7> — upstream Enonic XP 7 → XP 8 app upgrade guide (source of truth)
+- <https://developer.enonic.com/docs/code/stable/upgrade> — entry point and released XP 8 upgrade notes (read before planning)
+- <https://developer.enonic.com/docs/code/next/upgrade> — upcoming XP 8 upgrade notes; use only when explicitly instructed by the developer
 - `references/examples.md` — full `xplibs.*` alias tables (6 APIs + 24 libs), worked `build.gradle` examples (site app with version catalog;
   TS app with custom `dev` task), TypeScript wiring with `@enonic-types/*`
 - `references/manual-schemes-migration.md` — comprehensive set of descriptor transformations (paths, `kind:` map, field renames, special
   cases) — read this when the migrator is unavailable or when reviewing what it produced
-- <https://raw.githubusercontent.com/enonic/doc-xp/refs/heads/8.0/docs/release/upgrade.adoc> — full instance-level upgrade guide
+- <https://developer.enonic.com/docs/platform/stable/upgrade/xp7> — full instance-level XP 7 → XP 8 upgrade guide
   (dump/load, security, management API changes)
 - `xp-app-debugger` skill — diagnose build/runtime errors after upgrade
 - `enonic-cli` skill — full reference for every `enonic` command this skill uses (`project build`/`deploy`, `sandbox create`/`list`,

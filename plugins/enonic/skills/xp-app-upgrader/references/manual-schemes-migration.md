@@ -3,7 +3,7 @@
 Use this reference when `xp8migrator` is unavailable, when something it produced needs hand-correcting, or when reading its output to
 understand what changed. The transformations below are everything the migrator does on a real XP 7 app (verified against the `app-hmdb`
 sample). The migrator is the recommended path — see <https://github.com/enonic/xp8migrator> and
-<https://raw.githubusercontent.com/enonic/doc-code/refs/heads/master/docs/upgrade.adoc>.
+<https://developer.enonic.com/docs/code/stable/upgrade/xp7>.
 
 The migration consists of seven concerns, applied across every descriptor:
 
@@ -457,7 +457,7 @@ The migrator never modifies:
 - `build.gradle`, `gradle.properties`, `gradle/wrapper/*` — build files (handled separately, see SKILL.md)
 - `tsconfig.json`, `tsup.config.ts`, etc. — TypeScript / bundler config (handled separately)
 - `logback.xml` — logging config (handled separately, see
-  <https://raw.githubusercontent.com/enonic/doc-xp/refs/heads/8.0/docs/release/upgrade.adoc>)
+  <https://developer.enonic.com/docs/platform/stable/upgrade/xp7>)
 
 ## Summary checklist
 

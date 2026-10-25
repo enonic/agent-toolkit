@@ -209,29 +209,36 @@ Apply the approved changes in two passes — descriptors first via the migrator,
 **Descriptor pass (xp8migrator):**
 
 ```sh
-# from the app project root
-curl -fsSL https://raw.githubusercontent.com/enonic/xp8migrator/main/migrator-install.sh | sh
+# from the app project root — this is what the upstream migrator-install.sh does, without piping a remote script into a shell
+curl -fsSL "https://github.com/enonic/xp8migrator/releases/latest/download/migrator-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz" | tar -xz
+chmod +x migrator
 ./migrator -e overwrite         # non-interactive — overwrite any pre-existing target files
 ```
 
-> ⚠️ **Flag this to the user before running it.** The `curl … | sh` install pipes a remote script straight into a shell and requires
-> explicit user approval. Offer the user a choice between running the installer themselves or approving it interactively. Once
-> `./migrator` exists in the project root, the rest of the descriptor pass proceeds normally.
+> ⚠️ **Flag the download to the user before running it.** It fetches and executes a binary from GitHub releases. Do **not** use the
+> upstream `curl … | sh` one-liner: piping a remote script into a shell is the shape agent permission modes most often refuse. If the
+> download is still refused, **ask the user to run it** (in Claude Code they can type `! <command>` to run it in their own shell) and
+> wait; do not silently switch to hand-conversion. Only if the user declines, or the migrator cannot handle a descriptor, fall back to
+> hand-edits per `references/manual-schemes-migration.md`, and say so in the plan and the final report. Once `./migrator` exists in the
+> project root, the rest of the descriptor pass proceeds normally.
 
 If the migrator errors out, run `./migrator -h` to inspect the available flags. **Don't run the migrator a second time with `-x`** — its
 post-migration step tries to move `cms/style/style.yaml` again and fails with `FileAlreadyExistsException`. Cleanup of the original XML
 happens via plain `rm` after the build is green (see the Cleanup step), not via `./migrator -x`.
 
-The migrator leaves the original `site/` tree and `application.xml` in place. Sibling `.js`, `.html`, and `.svg` files are *copied* into the
-new `cms/` location during migration. Don't delete anything yet — let `enonic project build` validate the result first. If it fails, the
+The migrator leaves the original `site/` tree and `application.xml` in place. All non-descriptor sibling files (`.js`, `.ts`, `.html`,
+`.svg`, …) and placeholder directories are *copied* into the new `cms/` location, and mapping controller paths in `cms/site.yaml` are
+rewritten from `/site/…` to `/cms/…`. Verify what moved (`find src/main/resources/cms -type f`) instead of scheduling `git mv` or path
+edits up front. Don't delete anything yet — let `enonic project build` validate the result first. If it fails, the
 originals are still there for diagnosis.
 
 On Windows, use `.\migrator.exe` and the PowerShell installer (`migrator-install.ps1`). Useful flags: `-h` (help), `-a <app-name>` (override
 `gradle.properties`), `-e ask|overwrite|skip` (conflict policy — use `overwrite` for non-interactive runs).
 See <https://github.com/enonic/xp8migrator> for the canonical CLI reference.
 
-If `xp8migrator` is unavailable (offline environment, descriptor not handled by the tool), fall back to hand-edits per
-`references/manual-schemes-migration.md`.
+If `xp8migrator` is unavailable (offline environment, download declined by the user, descriptor not handled by the tool), fall back to
+hand-edits per `references/manual-schemes-migration.md`. The migrator's YAML model classes under
+`src/main/java/com/enonic/xp/migrator/yaml/` in the xp8migrator repo are the exact shapes to reproduce.
 
 **Build / code pass (hand-edits):**
 
@@ -275,7 +282,8 @@ rm ./migrator                   # remove the binary too
 **Do NOT uninstall the Enonic CLI** during cleanup. Unlike `./migrator` (a single-purpose binary dropped into the project), the CLI is a
 machine-level developer tool — if the upgrade installed it, it stays installed.
 
-The migrator already copied sibling `.js`/`.html`/`.svg` files from `site/` into `cms/`, so wiping the entire `site/` directory is safe.
+The migrator already copied the sibling files from `site/` into `cms/` (verify with `find src/main/resources/cms -type f`), so wiping
+the entire `site/` directory is safe.
 (Use plain `rm`, never `./migrator -x` — see the Descriptor pass under Execute.)
 
 If both `cms/style/style.yaml` and `cms/styles/image.yaml` exist after migration (older migrator versions emitted both), delete

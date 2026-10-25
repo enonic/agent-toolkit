@@ -219,7 +219,9 @@ No additional flags.
 
 ### enonic sandbox upgrade
 
-Upgrade sandbox XP distribution version. Downgrades are not allowed. Alias: `up`.
+Upgrade sandbox XP distribution version. Downgrades are not allowed. Alias: `up`. This swaps only the distro; the sandbox's `home/repo`
+is untouched. Safe within a major version. For XP 7 → XP 8 it must be preceded by a dump on XP 7 and followed by `dump load --upgrade`
+on XP 8; see `workflows.md`, "XP 7 → XP 8 migration".
 
 ```
 enonic sandbox upgrade [name] [flags]

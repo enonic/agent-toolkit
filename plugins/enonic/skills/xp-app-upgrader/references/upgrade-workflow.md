@@ -299,6 +299,13 @@ enonic sandbox list      # read-only — sandboxes + distro versions; the runnin
    `xpVersion` (an XP 8 app on a leftover XP 7 sandbox fails to load) and ask which one to use — or whether to create a fresh one. If a new
    sandbox is needed, confirm the version, then create it with the **Essentials** template:
    `enonic sandbox create <name> -v <xpVersion> -t essentials -f`.
+
+   > ⚠️ **Never run `enonic sandbox upgrade` on an XP 7 sandbox as part of this step.** It only swaps the XP distro and leaves the
+   > sandbox's XP 7 repositories in place, which XP 8 cannot read. A major upgrade is a data migration: the data must be dumped on XP 7
+   > (`--archive`, full version history) and loaded on XP 8 with `--upgrade` first. If the user wants to keep the data in an existing
+   > XP 7 sandbox, stop here and follow the instance guide at <https://developer.enonic.com/docs/platform/stable/upgrade/xp7> and the
+   > `enonic-cli` skill's "XP 7 → XP 8 migration" recipe before any deploy. If the data does not matter, create a fresh XP 8 sandbox.
+
 2. **Check whether a sandbox is already running before offering to start one.** In the `enonic sandbox list` output the running sandbox is
    marked with a leading **`*`**, and only one sandbox runs at a time. So:
     - **The sandbox you picked is already running** (`*` next to it) → don't start anything; stage the JAR with

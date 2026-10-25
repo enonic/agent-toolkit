@@ -74,6 +74,30 @@ enonic sandbox start my-sandbox -d -f
 enonic dump load -d upgrade-dump --upgrade -a su:password -f
 ```
 
+## XP 7 → XP 8 migration
+
+A major upgrade is a **data migration**, not a runtime replacement. `enonic sandbox upgrade` only swaps the distro and leaves XP 7
+repositories that XP 8 cannot read, so the recipe above is **not** sufficient. Follow
+<https://developer.enonic.com/docs/platform/stable/upgrade/xp7>:
+
+```bash
+# 1. On XP 7.16.x: dump every repository WITH version history and binaries.
+#    --archive is mandatory (XP 8 cannot read a folder dump); do NOT pass --skip-versions.
+enonic dump create -d xp7to8 --archive --compat 7 -a su:password -f
+
+# 2. Stop XP 7 and switch to XP 8 (upgrade the sandbox or create a fresh XP 8 one)
+enonic sandbox stop -f
+enonic sandbox upgrade my_sandbox -v 8.1.1 -f
+
+# 3. Start XP 8 and load the dump with --upgrade
+enonic sandbox start my_sandbox -d -f
+enonic dump load -d xp7to8 --upgrade -a su:password -f
+```
+
+The CLI loses its connection during the load when the system repo is replaced; that is expected and the load continues server-side.
+Watch `server.log` for `Dump Load completed` before touching data. Apps that arrive with the dump are stored but will not start until
+their XP 8 versions are installed (`enonic app install`).
+
 ## CI/CD Deployment
 
 Build and deploy to a remote XP instance in a pipeline:

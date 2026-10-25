@@ -105,7 +105,7 @@ All run from the project root directory.
 | `sandbox list`             | List all sandboxes                | —                                                                                                          |
 | `sandbox start [name]`     | Start sandbox                     | `--prod`, `--debug`, `-d` (detach), `--http.port <port>`                                                   |
 | `sandbox stop`             | Stop running sandbox              | —                                                                                                          |
-| `sandbox upgrade [name]`   | Upgrade XP version (no downgrade) | `-v <version>`, `-i <docker-image>`, `-a`/`--all`                                                          |
+| `sandbox upgrade [name]`   | Swap XP distro only (no downgrade); 7 → 8 needs dump/load, see workflows.md | `-v <version>`, `-i <docker-image>`, `-a`/`--all`                                                          |
 | `sandbox delete [name]`    | Delete sandbox and data           | —                                                                                                          |
 | `sandbox copy [src] [dst]` | Clone sandbox                     | —                                                                                                          |
 

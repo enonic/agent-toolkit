@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.5.0",
   "devDependencies": {
-    "@anthropic-ai/claude-code": "2.1.220",
+    "@anthropic-ai/claude-code": "2.1.251",
     "@google/gemini-cli": "0.53.0",
     "@openai/codex": "0.146.0"
   },

@@ -1,0 +1,39 @@
+{
+  "name": "enonic-contrib",
+  "version": "0.6.0",
+  "description": "Skills for contributing to Enonic's own repositories, starting with documentation",
+  "author": {
+    "name": "Enonic",
+    "email": "hello@enonic.com",
+    "url": "https://www.enonic.com"
+  },
+  "homepage": "https://github.com/enonic/agent-toolkit",
+  "repository": "https://github.com/enonic/agent-toolkit",
+  "keywords": [
+    "skills",
+    "enonic",
+    "documentation",
+    "asciidoc",
+    "developer.enonic.com",
+    "contributing"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Enonic Contributor",
+    "shortDescription": "Write and maintain Enonic documentation",
+    "longDescription": "Skills for contributing to Enonic's own repositories: conventions for AsciiDoc reference documentation published to developer.enonic.com, the docgen pipeline, and page structure.",
+    "developerName": "Enonic",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://www.enonic.com",
+    "defaultPrompt": [
+      "Add a new page to this Enonic documentation.",
+      "Review this AsciiDoc page against the Enonic docs conventions.",
+      "Set up the Enonic docgen workflow for this repository."
+    ],
+    "brandColor": "#FF5A5F"
+  }
+}

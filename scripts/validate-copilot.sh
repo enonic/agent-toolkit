@@ -14,8 +14,10 @@ if ! "$gh_bin" skill --help >/dev/null 2>&1; then
   exit 1
 fi
 
-for skill in enonic-cli xp-app-debugger xp-app-upgrader; do
-  "$gh_bin" skill install "$repo_root/plugins/enonic/skills/$skill" \
+expected_count=0
+for skill_dir in "$repo_root"/plugins/*/skills/*; do
+  skill="$(basename "$skill_dir")"
+  "$gh_bin" skill install "$skill_dir" \
     --from-local \
     --all \
     --agent github-copilot \
@@ -25,12 +27,13 @@ for skill in enonic-cli xp-app-debugger xp-app-upgrader; do
     echo "GitHub Copilot installation did not discover $skill" >&2
     exit 1
   fi
+  expected_count=$((expected_count + 1))
 done
 
 installed_count="$(find "$HOME/.copilot/skills" -name SKILL.md | wc -l | tr -d ' ')"
-if [[ "$installed_count" != "3" ]]; then
-  echo "Expected exactly three Copilot skills, found $installed_count" >&2
+if [[ "$installed_count" != "$expected_count" ]]; then
+  echo "Expected exactly $expected_count Copilot skills, found $installed_count" >&2
   exit 1
 fi
 
-echo "GitHub Copilot discovered and installed all three skills."
+echo "GitHub Copilot discovered and installed all $expected_count skills."

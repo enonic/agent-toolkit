@@ -10,13 +10,17 @@ export CODEX_HOME="$test_root/codex-home"
 mkdir -p "$CODEX_HOME"
 
 "$codex_bin" plugin marketplace add "$repo_root" --json
-"$codex_bin" plugin add enonic@enonic-agent-toolkit --json
 
-for skill in enonic-cli xp-app-debugger xp-app-upgrader; do
-  if ! find "$CODEX_HOME" -path "*/skills/$skill/SKILL.md" -print -quit | grep -q .; then
-    echo "Codex installation did not discover $skill" >&2
-    exit 1
-  fi
+for plugin in enonic enonic-contrib; do
+  "$codex_bin" plugin add "$plugin@enonic-agent-toolkit" --json
+
+  for skill_dir in "$repo_root/plugins/$plugin/skills"/*; do
+    skill="$(basename "$skill_dir")"
+    if ! find "$CODEX_HOME" -path "*/skills/$skill/SKILL.md" -print -quit | grep -q .; then
+      echo "Codex installation did not discover $skill from $plugin" >&2
+      exit 1
+    fi
+  done
 done
 
-echo "Codex installed enonic and discovered all three skills."
+echo "Codex installed both plugins and discovered all four skills."

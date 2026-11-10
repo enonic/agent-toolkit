@@ -9,12 +9,19 @@ trap 'rm -rf "$test_root"' EXIT
 export HOME="$test_root/home"
 mkdir -p "$HOME"
 
-"$gemini_bin" skills install "$repo_root/plugins/enonic/skills" \
-  --scope user \
-  --consent
+expected_count=0
+for plugin_dir in "$repo_root"/plugins/*; do
+  "$gemini_bin" skills install "$plugin_dir/skills" \
+    --scope user \
+    --consent
+  for skill_dir in "$plugin_dir"/skills/*; do
+    expected_count=$((expected_count + 1))
+  done
+done
 
 skill_list="$("$gemini_bin" skills list)"
-for skill in enonic-cli xp-app-debugger xp-app-upgrader; do
+for skill_dir in "$repo_root"/plugins/*/skills/*; do
+  skill="$(basename "$skill_dir")"
   if [[ ! -f "$HOME/.gemini/skills/$skill/SKILL.md" ]]; then
     echo "Gemini CLI installation did not discover $skill" >&2
     exit 1
@@ -26,9 +33,9 @@ for skill in enonic-cli xp-app-debugger xp-app-upgrader; do
 done
 
 installed_count="$(find "$HOME/.gemini/skills" -name SKILL.md | wc -l | tr -d ' ')"
-if [[ "$installed_count" != "3" ]]; then
-  echo "Expected exactly three Gemini skills, found $installed_count" >&2
+if [[ "$installed_count" != "$expected_count" ]]; then
+  echo "Expected exactly $expected_count Gemini skills, found $installed_count" >&2
   exit 1
 fi
 
-echo "Gemini CLI discovered, installed, and enabled all three skills."
+echo "Gemini CLI discovered, installed, and enabled all $expected_count skills."

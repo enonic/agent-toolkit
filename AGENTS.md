@@ -1,17 +1,22 @@
 # Agent toolkit contribution instructions
 
-This repository publishes shared Agent Skills for Enonic products. Version 0.5.0 contains the self-contained `plugins/enonic/` package for
-Claude Code and Codex, with the same skill directories installable by GitHub Copilot and Gemini CLI.
+This repository publishes shared Agent Skills for Enonic products. Version 0.6.0 contains two self-contained packages, `plugins/enonic/`
+for people building on Enonic XP and `plugins/enonic-contrib/` for people contributing to Enonic's own repositories, for Claude Code and
+Codex, with the same skill directories installable by GitHub Copilot and Gemini CLI.
 
 ## Plugin structure
 
-- Keep canonical skill content under `plugins/enonic/skills/`; do not duplicate skills per client.
-- Keep both plugin manifests inside `plugins/enonic/` and both marketplace registries synchronized.
-- The plugin name is `enonic`, the marketplace name is `enonic-agent-toolkit`, and repository links use
+- Keep canonical skill content under `plugins/<plugin>/skills/`; do not duplicate skills per client or per plugin.
+- Keep both plugin manifests inside each plugin's package and both marketplace registries synchronized.
+- The plugin names are `enonic` and `enonic-contrib`, the marketplace name is `enonic-agent-toolkit`, and repository links use
   `https://github.com/enonic/agent-toolkit`.
-- Bump the Claude marketplace and both plugin manifest versions together.
+- All plugin manifests and marketplace entries carry one shared version; bump them together with `VERSION` in
+  `scripts/validate_repo.py`. Register a new plugin or skill in `PLUGINS` there.
+- Skill names must be unique across plugins: GitHub Copilot and Gemini CLI install skills flat by directory name. Prefix a
+  generic name with the product (`enonic-docs`, not `docs`).
 - Keep licensing in the repository-level `LICENSE` file rather than duplicating license metadata across packaged files.
-- Do not add empty future plugins. Group future skills by capability rather than client.
+- Do not add empty future plugins. Group future skills by audience and capability rather than client: `enonic` for building on
+  Enonic, `enonic-contrib` for working on Enonic's repositories.
 
 ## Portable skill writing
 
@@ -34,7 +39,7 @@ npm run validate:copilot
 GEMINI_BIN="$PWD/node_modules/.bin/gemini" npm run validate:gemini
 ```
 
-These checks validate all three skills, the strict Claude marketplace, installation and discovery in Codex, GitHub Copilot, and Gemini
+These checks validate every skill in every plugin, the strict Claude marketplace, installation and discovery in Codex, GitHub Copilot, and Gemini
 CLI, manifest consistency, relative references, local documentation links, stale naming, entry-point size, and portability and permission
 policies.
 

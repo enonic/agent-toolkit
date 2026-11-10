@@ -43,5 +43,20 @@ These checks validate every skill in every plugin, the strict Claude marketplace
 CLI, manifest consistency, relative references, local documentation links, stale naming, entry-point size, and portability and permission
 policies.
 
-Releases are created only through the manually dispatched release workflow on `master`. Do not manually tag or publish from a feature
-branch.
+## Release procedure
+
+Clients cache installed plugins by version and do not auto-update from this marketplace, so a change merged to `master` reaches
+nobody until it is released under a new version. Treat every merge that touches `plugins/` as a release that is due.
+
+1. **Bump the shared version in the same pull request as the change.** Update `VERSION` in `scripts/validate_repo.py`, every
+   `plugins/*/.claude-plugin/plugin.json` and `plugins/*/.codex-plugin/plugin.json`, every entry in
+   `.claude-plugin/marketplace.json`, and `package.json` with `package-lock.json`. Patch for fixes to existing skills, minor for a
+   new skill or plugin. `npm run validate` fails if any of them disagree.
+2. **Merge to `master`** once the Validate workflow is green.
+3. **Run the Release workflow** from the Actions tab on `master` with the exact version as input. It reruns every check, verifies
+   that all manifests carry that version and that the tag does not exist yet, then creates the tag and the GitHub release. Never
+   tag or publish by hand, and never from a feature branch.
+4. **Tell users.** Point them at the Updating section of `README.md`; nothing is pushed to their machines.
+
+A merged change without steps 1 and 3 is not shipped. When finishing work in this repository, state explicitly whether a release
+has been cut or is still pending.

@@ -1,0 +1,19 @@
+{
+  "name": "enonic-contrib",
+  "version": "0.6.0",
+  "description": "Skills for contributing to Enonic's own repositories, starting with documentation",
+  "author": {
+    "name": "Enonic",
+    "email": "hello@enonic.com"
+  },
+  "repository": "https://github.com/enonic/agent-toolkit",
+  "skills": "./skills/",
+  "keywords": [
+    "skills",
+    "enonic",
+    "documentation",
+    "asciidoc",
+    "developer.enonic.com",
+    "contributing"
+  ]
+}

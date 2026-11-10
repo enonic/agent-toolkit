@@ -66,6 +66,49 @@ Run `gemini skills list` to verify discovery.
 Upgrading Claude Code or Codex from a version before 0.5.0 requires removing the old installation first; follow
 [MIGRATION.md](MIGRATION.md) for recoverable, client-specific steps.
 
+## Updating
+
+Skill changes reach you only through a new release, and none of the clients fetch releases from this marketplace automatically by
+default. Check the [releases page](https://github.com/enonic/agent-toolkit/releases) and update with your client's commands.
+
+### Claude Code
+
+Claude Code auto-updates plugins only from marketplaces that have auto-update enabled, and it is off for every marketplace except
+Anthropic's own. Either enable it once for `enonic-agent-toolkit` under `/plugin` → Marketplaces, or update by hand:
+
+```text
+claude plugin marketplace update enonic-agent-toolkit
+claude plugin update enonic@enonic-agent-toolkit
+claude plugin update enonic-contrib@enonic-agent-toolkit
+```
+
+Then run `/reload-plugins` or restart the session. Installed copies are cached by version, so a release that does not bump the
+version is never picked up; every release here bumps it.
+
+### Codex
+
+Refresh the marketplace snapshot, then re-add the plugins; `plugin add` replaces an installed copy with the current version:
+
+```text
+codex plugin marketplace upgrade
+codex plugin add enonic@enonic-agent-toolkit
+codex plugin add enonic-contrib@enonic-agent-toolkit
+```
+
+Start a new thread so Codex reloads the skills.
+
+### GitHub Copilot
+
+```text
+gh skill update
+```
+
+This compares every installed skill against the repository and re-downloads the ones that changed.
+
+### Gemini CLI
+
+Gemini CLI has no update command. Run the install commands again; they overwrite the installed skills with the current version.
+
 ## Repository layout
 
 ```text
@@ -110,6 +153,9 @@ GEMINI_BIN="$PWD/node_modules/.bin/gemini" npm run validate:gemini
 
 Pull requests run all checks in GitHub Actions. The manual release workflow accepts an exact version only on `master`, reruns every
 check, verifies all manifest versions and the tag's absence, and then creates the tag and GitHub release.
+
+A release is due whenever skill content merges to `master`. Installed plugins are keyed by version, so a merged fix that is not
+released and version-bumped reaches nobody (see [Updating](#updating)).
 
 ## License
 

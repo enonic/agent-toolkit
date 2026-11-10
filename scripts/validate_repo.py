@@ -9,11 +9,13 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PLUGIN = ROOT / "plugins" / "enonic"
-SKILLS = PLUGIN / "skills"
-VERSION = "0.5.0"
+PLUGINS_DIR = ROOT / "plugins"
+VERSION = "0.6.0"
 REPOSITORY = "https://github.com/enonic/agent-toolkit"
-SKILL_NAMES = {"enonic-cli", "xp-app-debugger", "xp-app-upgrader"}
+PLUGINS = {
+    "enonic": {"enonic-cli", "xp-app-debugger", "xp-app-upgrader"},
+    "enonic-contrib": {"enonic-docs"},
+}
 STALE_NAMES = (
     "ai-enonic-" + "marketplace",
     "enonic-" + "marketplace",
@@ -39,79 +41,90 @@ def load_json(path: Path) -> dict:
 
 claude_market = load_json(ROOT / ".claude-plugin" / "marketplace.json")
 codex_market = load_json(ROOT / ".agents" / "plugins" / "marketplace.json")
-claude_plugin = load_json(PLUGIN / ".claude-plugin" / "plugin.json")
-codex_plugin = load_json(PLUGIN / ".codex-plugin" / "plugin.json")
 
 if claude_market.get("name") != "enonic-agent-toolkit":
     errors.append("Claude marketplace name must be enonic-agent-toolkit")
 if codex_market.get("name") != "enonic-agent-toolkit":
     errors.append("Codex marketplace name must be enonic-agent-toolkit")
 
-for label, manifest in (("Claude", claude_plugin), ("Codex", codex_plugin)):
-    if manifest.get("name") != "enonic":
-        errors.append(f"{label} plugin name must be enonic")
-    if manifest.get("version") != VERSION:
-        errors.append(f"{label} plugin version must be {VERSION}")
-    if manifest.get("repository") != REPOSITORY:
-        errors.append(f"{label} plugin repository must be {REPOSITORY}")
-    if manifest.get("skills") not in ("./skills", "./skills/"):
-        errors.append(f"{label} plugin must use its packaged ./skills directory")
+actual_plugins = {path.name for path in PLUGINS_DIR.iterdir() if path.is_dir()}
+if actual_plugins != set(PLUGINS):
+    errors.append(f"Expected plugins {sorted(PLUGINS)}, found {sorted(actual_plugins)}")
 
-claude_entries = claude_market.get("plugins", [])
-if len(claude_entries) != 1:
-    errors.append("Claude marketplace must contain exactly one plugin")
-else:
-    entry = claude_entries[0]
-    expected = {"name": "enonic", "source": "./plugins/enonic", "version": VERSION}
+claude_entries = {entry.get("name"): entry for entry in claude_market.get("plugins", [])}
+if set(claude_entries) != set(PLUGINS):
+    errors.append(f"Claude marketplace must list exactly {sorted(PLUGINS)}")
+codex_entries = {entry.get("name"): entry for entry in codex_market.get("plugins", [])}
+if set(codex_entries) != set(PLUGINS):
+    errors.append(f"Codex marketplace must list exactly {sorted(PLUGINS)}")
+
+for plugin_name, skill_names in PLUGINS.items():
+    plugin = PLUGINS_DIR / plugin_name
+    claude_plugin = load_json(plugin / ".claude-plugin" / "plugin.json")
+    codex_plugin = load_json(plugin / ".codex-plugin" / "plugin.json")
+
+    for label, manifest in (("Claude", claude_plugin), ("Codex", codex_plugin)):
+        if manifest.get("name") != plugin_name:
+            errors.append(f"{label} plugin name must be {plugin_name}")
+        if manifest.get("version") != VERSION:
+            errors.append(f"{label} plugin {plugin_name} version must be {VERSION}")
+        if manifest.get("repository") != REPOSITORY:
+            errors.append(f"{label} plugin {plugin_name} repository must be {REPOSITORY}")
+        if manifest.get("skills") not in ("./skills", "./skills/"):
+            errors.append(f"{label} plugin {plugin_name} must use its packaged ./skills directory")
+
+    entry = claude_entries.get(plugin_name, {})
+    expected = {"source": f"./plugins/{plugin_name}", "version": VERSION}
     for key, value in expected.items():
         if entry.get(key) != value:
-            errors.append(f"Claude marketplace plugin {key} must be {value}")
+            errors.append(f"Claude marketplace plugin {plugin_name} {key} must be {value}")
 
-codex_entries = codex_market.get("plugins", [])
-if len(codex_entries) != 1:
-    errors.append("Codex marketplace must contain exactly one plugin")
-else:
-    entry = codex_entries[0]
-    if entry.get("name") != "enonic":
-        errors.append("Codex marketplace plugin name must be enonic")
-    if entry.get("source") != {"source": "local", "path": "./plugins/enonic"}:
-        errors.append("Codex marketplace source must be local ./plugins/enonic")
+    entry = codex_entries.get(plugin_name, {})
+    if entry.get("source") != {"source": "local", "path": f"./plugins/{plugin_name}"}:
+        errors.append(f"Codex marketplace source for {plugin_name} must be local ./plugins/{plugin_name}")
     if entry.get("policy") != {
         "installation": "AVAILABLE",
         "authentication": "ON_INSTALL",
     }:
-        errors.append("Codex marketplace policy must be AVAILABLE/ON_INSTALL")
+        errors.append(f"Codex marketplace policy for {plugin_name} must be AVAILABLE/ON_INSTALL")
     if entry.get("category") != "Productivity":
-        errors.append("Codex marketplace category must be Productivity")
+        errors.append(f"Codex marketplace category for {plugin_name} must be Productivity")
 
-actual_skills = {path.name for path in SKILLS.iterdir() if path.is_dir()}
-if actual_skills != SKILL_NAMES:
-    errors.append(f"Expected skills {sorted(SKILL_NAMES)}, found {sorted(actual_skills)}")
+    skills = plugin / "skills"
+    actual_skills = {path.name for path in skills.iterdir() if path.is_dir()}
+    if actual_skills != skill_names:
+        errors.append(
+            f"{plugin_name}: expected skills {sorted(skill_names)}, found {sorted(actual_skills)}"
+        )
 
-for skill in sorted(SKILLS.iterdir()):
-    if not skill.is_dir():
-        continue
-    entry_point = skill / "SKILL.md"
-    if not entry_point.is_file():
-        errors.append(f"{skill.relative_to(ROOT)} has no SKILL.md")
-        continue
-    line_count = len(entry_point.read_text().splitlines())
-    if line_count >= 500:
-        errors.append(f"{entry_point.relative_to(ROOT)} has {line_count} lines (must be below 500)")
+    for skill in sorted(skills.iterdir()):
+        if not skill.is_dir():
+            continue
+        entry_point = skill / "SKILL.md"
+        if not entry_point.is_file():
+            errors.append(f"{skill.relative_to(ROOT)} has no SKILL.md")
+            continue
+        line_count = len(entry_point.read_text().splitlines())
+        if line_count >= 500:
+            errors.append(f"{entry_point.relative_to(ROOT)} has {line_count} lines (must be below 500)")
 
-    for markdown in skill.rglob("*.md"):
-        text = markdown.read_text()
-        match = CLIENT_WORDING.search(text)
-        if match:
-            errors.append(
-                f"{markdown.relative_to(ROOT)} contains client-specific wording: {match.group(0)!r}"
-            )
-        for reference in re.findall(r"`(references/[A-Za-z0-9._/-]+\.md)`", text):
-            target = skill / reference
-            if not target.is_file():
+        for markdown in skill.rglob("*.md"):
+            text = markdown.read_text()
+            match = CLIENT_WORDING.search(text)
+            if match:
                 errors.append(
-                    f"{markdown.relative_to(ROOT)} references missing {reference}"
+                    f"{markdown.relative_to(ROOT)} contains client-specific wording: {match.group(0)!r}"
                 )
+            for reference in re.findall(r"`(references/[A-Za-z0-9._/-]+\.md)`", text):
+                target = skill / reference
+                if not target.is_file():
+                    errors.append(
+                        f"{markdown.relative_to(ROOT)} references missing {reference}"
+                    )
+
+all_skill_names = [name for names in PLUGINS.values() for name in names]
+if len(all_skill_names) != len(set(all_skill_names)):
+    errors.append("Skill names must be unique across plugins; flat installs share one namespace")
 
 for path in ROOT.rglob("*"):
     if not path.is_file() or any(part in {".git", "node_modules", ".venv"} for part in path.parts):

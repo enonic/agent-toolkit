@@ -21,44 +21,44 @@ Version 0.6.0 provides two plugins, each delivering the same skills to all four 
 
 ## Installation
 
+Start with the `enonic` plugin. The `enonic-contrib` plugin is optional and only relevant when you work in Enonic's own
+repositories; see [Optional: enonic-contrib](#optional-enonic-contrib) below.
+
 ### Claude Code
 
 ```text
 /plugin marketplace add enonic/agent-toolkit
 /plugin install enonic@enonic-agent-toolkit
-/plugin install enonic-contrib@enonic-agent-toolkit
 /reload-plugins
 ```
-
-Install only the plugins you need; `enonic-contrib` is relevant when you work in Enonic's repositories.
 
 ### Codex
 
 ```text
 codex plugin marketplace add enonic/agent-toolkit
 codex plugin add enonic@enonic-agent-toolkit
-codex plugin add enonic-contrib@enonic-agent-toolkit
 ```
 
 Start a new thread so Codex discovers the plugin's skills.
 
 ### GitHub Copilot
 
-GitHub CLI 2.90.0 or newer installs every skill from both plugins into Copilot's user scope:
+GitHub CLI 2.90.0 or newer installs skills by name into Copilot's user scope:
 
 ```text
-gh skill install enonic/agent-toolkit --all --agent github-copilot --scope user
+gh skill install enonic/agent-toolkit enonic-cli --agent github-copilot --scope user
+gh skill install enonic/agent-toolkit xp-app-debugger --agent github-copilot --scope user
+gh skill install enonic/agent-toolkit xp-app-upgrader --agent github-copilot --scope user
 ```
 
-Skills are installed by name without a plugin prefix, so the two plugins' skill names never overlap.
+Skills are installed without a plugin prefix, so the two plugins' skill names never overlap.
 
 ### Gemini CLI
 
-Install each plugin's skills from its canonical skill directory. Review the displayed skills and approve the installation:
+Install the plugin's skills from its canonical skill directory. Review the displayed skills and approve the installation:
 
 ```text
 gemini skills install https://github.com/enonic/agent-toolkit --path plugins/enonic/skills
-gemini skills install https://github.com/enonic/agent-toolkit --path plugins/enonic-contrib/skills
 ```
 
 Run `gemini skills list` to verify discovery.
@@ -66,10 +66,40 @@ Run `gemini skills list` to verify discovery.
 Upgrading Claude Code or Codex from a version before 0.5.0 requires removing the old installation first; follow
 [MIGRATION.md](MIGRATION.md) for recoverable, client-specific steps.
 
+### Optional: enonic-contrib
+
+Add this plugin if you contribute to Enonic's repositories, for example when writing documentation in a `doc-*` repository or
+in a product repository that carries its own `docs/`.
+
+Claude Code:
+
+```text
+/plugin install enonic-contrib@enonic-agent-toolkit
+```
+
+Codex:
+
+```text
+codex plugin add enonic-contrib@enonic-agent-toolkit
+```
+
+GitHub Copilot:
+
+```text
+gh skill install enonic/agent-toolkit enonic-docs --agent github-copilot --scope user
+```
+
+Gemini CLI:
+
+```text
+gemini skills install https://github.com/enonic/agent-toolkit --path plugins/enonic-contrib/skills
+```
+
 ## Updating
 
 Skill changes reach you only through a new release, and none of the clients fetch releases from this marketplace automatically by
-default. Check the [releases page](https://github.com/enonic/agent-toolkit/releases) and update with your client's commands.
+default. Check the [releases page](https://github.com/enonic/agent-toolkit/releases) and update with your client's commands. If
+you installed `enonic-contrib`, repeat the plugin command for it.
 
 ### Claude Code
 
@@ -79,7 +109,6 @@ Anthropic's own. Either enable it once for `enonic-agent-toolkit` under `/plugin
 ```text
 claude plugin marketplace update enonic-agent-toolkit
 claude plugin update enonic@enonic-agent-toolkit
-claude plugin update enonic-contrib@enonic-agent-toolkit
 ```
 
 Then run `/reload-plugins` or restart the session. Installed copies are cached by version, so a release that does not bump the
@@ -87,12 +116,11 @@ version is never picked up; every release here bumps it.
 
 ### Codex
 
-Refresh the marketplace snapshot, then re-add the plugins; `plugin add` replaces an installed copy with the current version:
+Refresh the marketplace snapshot, then re-add the plugin; `plugin add` replaces an installed copy with the current version:
 
 ```text
 codex plugin marketplace upgrade
 codex plugin add enonic@enonic-agent-toolkit
-codex plugin add enonic-contrib@enonic-agent-toolkit
 ```
 
 Start a new thread so Codex reloads the skills.

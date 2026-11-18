@@ -9,14 +9,17 @@ repository, put this file at `docs/AGENTS.md` only if the repository already has
 and remember that the importer copies it as media unless it is excluded (see `references/pipeline.md`). Otherwise keep it at
 the repository root.
 
+Adapt the opening to the documentation type and actual portal URL: reference documentation normally lives under `/docs/`,
+and tutorials under `/learn/`.
+
 ```markdown
 # Agent instructions for <Product> documentation
 
-This repository contains the reference documentation for **<Product>**, written in AsciiDoc and published to
-https://developer.enonic.com/docs/<product>.
+This repository contains <reference documentation or a tutorial> for **<Product>**, written in AsciiDoc and published to
+<Full portal URL for this documentation set>.
 
-Shared conventions for Enonic documentation (publishing pipeline, menu and version files, AsciiDoc rules, library reference
-tables) are in the `enonic-docs` skill from the `enonic-contrib` plugin of https://github.com/enonic/agent-toolkit. Install it
+Shared conventions for Enonic documentation (language and tone, navigation, tutorials, publishing, and AsciiDoc) are in the
+`enonic-docs` skill from the `enonic-contrib` plugin of https://github.com/enonic/agent-toolkit. Install it
 and follow it for every change under `docs/`. The rules below are the ones specific to this product, plus the few shared rules
 that must hold even without the skill.
 
@@ -49,8 +52,8 @@ concept, or "document majors only, never patch alignment" for a multi-component 
 
 ## Key conventions specific to this repository
 
-- **Images:** <Layout and sizing rules that differ from the default, such as a shared `images/` folder per section or display
-  widths for screenshots.>
+- **Assets and images:** <Established asset locations that differ from the shared `docs/media/` default, and display widths
+  for screenshots.>
 - **External references:** <Product-specific link targets, such as a tutorial that builds on this documentation.>
 
 ## Must-know rules even without the skill

@@ -67,7 +67,7 @@ A trimmed version of the XP scheduler library page, showing two functions and tw
 = Scheduler library
 include::../.variables.adoc[]
 :toc: right
-:imagesdir: ../images
+:imagesdir: ../media
 
 Functions for creating and managing scheduled jobs.
 

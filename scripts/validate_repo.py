@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PLUGINS_DIR = ROOT / "plugins"
-VERSION = "0.6.0"
+VERSION = "0.6.1"
 REPOSITORY = "https://github.com/enonic/agent-toolkit"
 PLUGINS = {
     "enonic": {"enonic-cli", "xp-app-debugger", "xp-app-upgrader"},

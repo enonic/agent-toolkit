@@ -9,9 +9,9 @@ Writing rules shared by every Enonic documentation set. Product-specific vocabul
 = Page title
 include::.variables.adoc[]
 :toc: right
-:imagesdir: images
+:imagesdir: media
 
-One or two sentences saying what this page covers and who it is for.
+One or two informative sentences introducing the subject and scope, or the tutorial outcome.
 
 == First section
 
@@ -19,6 +19,7 @@ Content.
 ```
 
 - One level-0 title per page. Sections start at `==`.
+- Every page has a short introduction after the title and header attributes/includes, before the first section heading.
 - `include::.variables.adoc[]` goes directly below the title. From a subdirectory the path is `../.variables.adoc`.
 - `:toc: right` on any page long enough to scroll. The build sets it as a default, but stating it keeps IDE previews consistent.
 - Set `:imagesdir:` only on pages that have images.
@@ -32,6 +33,25 @@ Content.
   attribute from `.variables.adoc` for the base URL so it can be updated in one place.
 - Never append `^` to a link label. Every Enonic documentation set renders on the same portal as sibling navigation, and forcing
   a new tab removes user agency. Readers who want a new tab can middle-click or Cmd-click.
+
+### Links between documentation sets
+
+Cross-links lead to other documentation sets, tutorials, or portal pages outside the current set. Links between pages and
+anchors within the same set are internal links.
+
+Keep cross-links selective: they create dependencies between separately maintained content.
+
+- Link when the reader needs an external prerequisite, an authoritative reference, or a relevant continuation.
+- Briefly explain the concept locally so the current page remains understandable without following the link.
+- Avoid linking incidental product mentions, repeating the same destination unnecessarily, or adding broad lists of related
+  reading.
+- Prefer the destination's landing page or relevant topic page. Link to a section anchor only when that precision materially
+  helps. Use descriptive link labels.
+- Use shared URL attributes from `.variables.adoc` where applicable, so destinations can be maintained centrally.
+- Check that the destination matches the product version and context being documented.
+
+This restraint does not apply to internal navigation within a documentation set, including links between its pages, section
+anchors, and tutorial chapter transitions.
 
 ## Underscores
 
@@ -47,16 +67,30 @@ AsciiDoc treats paired underscores as italic markers. A lone `_` opens an italic
 
 When in doubt, wrap it.
 
+## Asset directories
+
+Store images, diagrams, videos, audio, downloads, and other supporting files in `docs/media/` by default. Create the directory
+only when there is an actual asset to store.
+
+- Reuse the shared directory across pages. Do not create asset directories for individual pages or sections by default.
+- If `media/` is needed for documentation pages—for example, `docs/media.adoc` with child pages under `docs/media/`—use
+  `docs/images/` as the shared asset directory instead. This fallback may contain any supporting file type, despite its name.
+- Use descriptive filenames that identify the subject, such as `content-studio-project-wizard.png`. Create subdirectories only
+  when the number of assets makes the shared directory difficult to navigate.
+- Reference shared assets instead of duplicating them. For images, set `:imagesdir:` to the relative path from the page to the
+  shared asset directory.
+- Do not create empty placeholder directories, and remove directories left empty after changes.
+- Preserve established asset locations when editing existing documentation. Do not move files solely to adopt this convention,
+  since their published URLs may be in use.
+
 ## Images
 
-- Store images in an `images/` directory relative to the referencing page, and set `:imagesdir: images` on the page.
+- For the default shared directory, use `:imagesdir: media` on a page directly under `docs/`, or `:imagesdir: ../media` on
+  `docs/topic/child.adoc`. Adjust the relative path for deeper pages or an established asset directory.
 - Reference with the block macro `image::name.png[Alt text]`. Use the inline macro `image:name.svg[Alt,opts=inline]` only for
   badges and icons that belong inside a sentence.
 - Give screenshots a display width when the stored image is high resolution; the convention for a given product (for example
   half the stored width) is in that repository's `AGENTS.md`.
-- Shared assets used across sections, such as version badges, live in `docs/images/` and are referenced relative to the page's
-  `:imagesdir:`. Do not duplicate them into section folders.
-- Do not leave empty `images/` directories behind when pages move.
 
 ## Version badges
 
@@ -66,7 +100,7 @@ A badge marks the product version that introduced a feature.
 - Never put a badge in a heading.
 - Label it with the product and version that introduced the feature: `image:xp-810.svg[XP 8.1.0,opts=inline]`, or
   `image:guillotine-9.svg[Guillotine 9,opts=inline]` for a Guillotine feature even when the page is about XP.
-- Badge SVGs are shared assets in `docs/images/`.
+- Badge SVGs use the shared asset directory, normally `docs/media/`.
 
 ## Variables
 
@@ -82,28 +116,62 @@ A badge marks the product version that introduced a feature.
 
 Reference them as `{xp-version}` and `{xp-docs}/...`. Update the file, not the pages, when a version changes.
 
-## Admonitions and callouts
+## Admonitions
 
 - `NOTE:` for side information, `TIP:` for a shortcut, `WARNING:` for something that loses data or breaks a site, `IMPORTANT:`
   sparingly. One-line admonitions use the paragraph form; multi-paragraph ones use the `[NOTE]` block.
-- Source blocks carry a language: `[source,typescript]`, `[source,yaml]`, `[source,json]`, `[source,graphql]`. Give a block a
-  caption with a `.Caption` line above it when the page has several.
-- Numbered callouts (`<1>`) are the preferred way to explain the lines of a schema or configuration example.
+
+## Code examples and callouts
+
+Source blocks carry a language, such as `[source,typescript]`, `[source,yaml]`, `[source,json]`, or `[source,graphql]`. Give a
+block a filename or path as its `.Caption` when relevant; otherwise use a descriptive caption when the page has several blocks.
+
+Use numbered callouts to connect specific lines in a code, configuration, or file-tree example to explanations below it.
+Use them when a few lines need explanation, such as a required setting, a naming constraint, or behavior that is not obvious
+from the code. Skip them for self-explanatory examples, short commands explained in surrounding text, or explanations that
+apply to the whole block. Do not annotate every line or repeat what the code already says.
+
+- Place each marker at the end of the relevant line. Use a suitable comment prefix where supported: `# <1>` in YAML or
+  `// <1>` in TypeScript.
+- Start numbering at 1 for each block and keep numbers consecutive.
+- Put the matching callout list directly below the block, before unrelated prose. Every marker must have an explanation,
+  and every explanation must have a corresponding marker.
+- Explain meaning, purpose, or constraints. Keep each explanation short.
+- Keep callout numbers separate from tutorial step numbers: steps describe actions; callouts explain the example.
+
+```asciidoc
+[source,text]
+----
+src/main/resources/
+  cms/
+    cms.yaml                 # <1>
+    content-types/
+      article/
+        article.yaml
+        article.svg          # <2>
+----
+<1> The application's CMS descriptor.
+<2> An optional icon displayed in Content Studio.
+```
+
+For formats without comments, such as JSON, prefer surrounding prose when the raw example needs to remain directly copyable.
+Review rendered examples to confirm that callouts match their explanations. Inside a tutorial step, keep the code block and
+its callout list attached to that same step using list continuations.
 
 ## Diagrams
 
 Flow and architecture diagrams are authored as Mermaid text and rendered to SVG; the rendered SVG is committed and referenced
 with a normal `image::` macro.
 
-- Keep the source next to the image it produces, dot-prefixed, for example `docs/web/images/.pipeline.mmd` rendering to
-  `docs/web/images/pipeline.svg`. The importer still copies the source as an orphan media item, which is harmless.
-- Use the ELK layout (`config: { layout: elk }` in the file's frontmatter). It honours subgraph `direction` and packs tighter
+- Keep the source next to the image it produces, dot-prefixed, for example `docs/media/.pipeline.mmd` rendering to
+  `docs/media/pipeline.svg`. The importer still copies the source as an orphan media item, which is harmless.
+- Use the ELK layout (`config: { layout: elk }` in the file's frontmatter). It honors subgraph `direction` and packs tighter
   than the default layout.
 - Render without a global install, from the repository root:
 
   ```sh
   npx -y -p @mermaid-js/mermaid-cli -p @mermaid-js/layout-elk \
-    mmdc -i docs/web/images/.pipeline.mmd -o docs/web/images/pipeline.svg -b transparent
+    mmdc -i docs/media/.pipeline.mmd -o docs/media/pipeline.svg -b transparent
   ```
 
   The first run downloads the CLI and a headless browser into the user's caches; nothing is added to the repository.
@@ -112,8 +180,8 @@ with a normal `image::` macro.
 
 ## External references
 
-Reference separately documented products with a one or two sentence summary and a link; do not re-document them. The standard
-targets:
+Briefly summarize separately documented products rather than re-documenting them. Add a cross-link when the reader needs more
+detail, following the guidance under Links between documentation sets. When a link is useful, use these standard targets:
 
 | Product                      | Role in the text                                                              | Link to                                        |
 |------------------------------|-------------------------------------------------------------------------------|------------------------------------------------|

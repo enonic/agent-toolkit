@@ -1,6 +1,6 @@
 {
   "name": "enonic-contrib",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Skills for contributing to Enonic's own repositories, starting with documentation",
   "author": {
     "name": "Enonic",

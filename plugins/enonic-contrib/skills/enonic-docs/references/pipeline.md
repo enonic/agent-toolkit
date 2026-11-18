@@ -39,7 +39,7 @@ jobs:
 
 1. Checks out the repository's **default branch** and reads `docs/versions.json` from there. Only the default branch's copy
    matters; `versions.json` on other branches is ignored.
-2. If `docs/versions.json` is missing, it substitutes a single version labelled `stable` built from the default branch.
+2. If `docs/versions.json` is missing, it substitutes a single version labeled `stable` built from the default branch.
 3. If no version carries `"latest": true`, the first entry gets it.
 4. For each version: resolves `checkout` with `git rev-parse`, checks it out, copies the repository to a build directory and runs
    asciidoctor in `docs/` with:
@@ -118,7 +118,9 @@ A repository whose default branch is the current release and whose next major li
 ```
 
 - `document` is the page path relative to `docs/` without the `.adoc` extension.
-- `menuItems` nests to any depth. A section entry normally points at its landing page (`concepts`) and lists its children.
+- `menuItems` technically supports arbitrary nesting. Follow the menu-depth convention in `../SKILL.md`: prefer at most two
+  levels, with a third when useful for grouping related pages. A section entry normally points at its landing page (`concepts`)
+  and lists its children.
 - The portal builds the navigation only from this file. Pages that are published but not listed are reachable by URL only.
 - Keep titles short; they are navigation labels, not page titles.
 

@@ -108,6 +108,11 @@ UI change makes a screenshot misleading, update or remove it.
 - Existing screenshots captured at 1× still need an explicit width: an 800-pixel-wide screenshot intended to display at
   800 pixels uses `width=800`. Do not assume every existing screenshot was captured at 2×.
 
+Screenshot dimensions and display dimensions serve different purposes. Capturing at 2× provides enough image detail for sharp
+rendering on high-density screens. Setting an explicit display width keeps the interface at its intended readable size instead
+of displaying it twice as large. A screenshot captured at 1600 pixels wide and displayed with `width=800` provides two image
+pixels per CSS pixel. The explicit width controls presentation; it does not reduce the file's download size.
+
 ```asciidoc
 // Captured at 1600 pixels wide; displayed at 800 pixels.
 image::content-studio-project.png[Content Studio project, width=800]

@@ -52,8 +52,8 @@ concept, or "document majors only, never patch alignment" for a multi-component 
 
 ## Key conventions specific to this repository
 
-- **Assets and images:** <Established asset locations that differ from the shared `docs/media/` default, and display widths
-  for screenshots.>
+- **Assets and images:** <Established asset locations that differ from the shared `docs/media/` default, and preferred
+  screenshot display widths. The shared explicit-width and 2× capture rules still apply.>
 - **External references:** <Product-specific link targets, such as a tutorial that builds on this documentation.>
 
 ## Must-know rules even without the skill

@@ -29,8 +29,8 @@ Content.
 - Between pages in the same documentation set: `<<path/to/page#,Label>>`. The path is relative to the current file and omits
   `.adoc`. From `docs/concepts/architecture.adoc` to `docs/release.adoc`: `<<../release#,Release notes>>`.
 - To an anchor on another page: `<<path/to/page#anchor-id,Label>>`. To an anchor on the same page: `<<anchor-id,Label>>`.
-- To another Enonic documentation set or any external site: `https://developer.enonic.com/docs/xp/stable/...[Label]`. Prefer an
-  attribute from `.variables.adoc` for the base URL so it can be updated in one place.
+- To another documentation set or an external site, use an absolute URL: `https://developer.enonic.com/docs/code[Code docs]`.
+  For portal cross-links, follow the version rules below. Prefer shared URL attributes from `.variables.adoc`.
 - Never append `^` to a link label. Every Enonic documentation set renders on the same portal as sibling navigation, and forcing
   a new tab removes user agency. Readers who want a new tab can middle-click or Cmd-click.
 
@@ -47,8 +47,11 @@ Keep cross-links selective: they create dependencies between separately maintain
   reading.
 - Prefer the destination's landing page or relevant topic page. Link to a section anchor only when that precision materially
   helps. Use descriptive link labels.
+- For a documentation package or tutorial as a whole, omit the version segment: `/docs/code`, not `/docs/code/stable`.
+  The developer portal redirects the package URL to its stable version.
+- For a deep link to a page inside the package, include the version segment: `/docs/code/stable/deep/path`. Select the version
+  that matches the product and context being documented; do not omit it from deep links.
 - Use shared URL attributes from `.variables.adoc` where applicable, so destinations can be maintained centrally.
-- Check that the destination matches the product version and context being documented.
 
 This restraint does not apply to internal navigation within a documentation set, including links between its pages, section
 anchors, and tutorial chapter transitions.
@@ -85,12 +88,43 @@ only when there is an actual asset to store.
 
 ## Images
 
+Use screenshots when they help the reader locate a control, understand a visual state, or verify a result. Avoid screenshots
+that merely repeat the written instructions. Capture the relevant area while retaining enough context to orient the reader,
+and keep text legible at the intended display width.
+
+Keep essential instructions and expected results in the text; readers should not need the image to complete the task. When a
+UI change makes a screenshot misleading, update or remove it.
+
 - For the default shared directory, use `:imagesdir: media` on a page directly under `docs/`, or `:imagesdir: ../media` on
   `docs/topic/child.adoc`. Adjust the relative path for deeper pages or an established asset directory.
 - Reference with the block macro `image::name.png[Alt text]`. Use the inline macro `image:name.svg[Alt,opts=inline]` only for
   badges and icons that belong inside a sentence.
-- Give screenshots a display width when the stored image is high resolution; the convention for a given product (for example
-  half the stored width) is in that repository's `AGENTS.md`.
+- Keep image alt text to 125 characters or fewer, including spaces and punctuation. Describe the information the image conveys
+  in its context. Avoid filenames and phrases such as "image of" or "screenshot of." Put longer explanations in the caption
+  or surrounding prose.
+- Always set an explicit display width in pixels for screenshots, regardless of their resolution. Capture new screenshots
+  at 2× their intended display size and set the AsciiDoc width to half the captured pixel width: 1600 pixels displays at 800;
+  800 pixels captured at 2× displays at 400.
+- Existing screenshots captured at 1× still need an explicit width: an 800-pixel-wide screenshot intended to display at
+  800 pixels uses `width=800`. Do not assume every existing screenshot was captured at 2×.
+
+```asciidoc
+// Captured at 1600 pixels wide; displayed at 800 pixels.
+image::content-studio-project.png[Content Studio project, width=800]
+```
+
+### Screenshot formats and file sizes
+
+Capture screenshots as PNG at 2× their intended display size. Aim for files under 500 KB; files from 500 KB to 1 MB are
+acceptable when the detail is useful. Optimize any screenshot over 1 MB before committing.
+
+Screenshots containing photographs or other detailed imagery can produce large PNG files. Convert these to WebP when it
+meaningfully reduces file size. Prefer lossless WebP for text-heavy interfaces; use lossy compression only when text and UI
+details remain clear at the intended display width.
+
+Preserve the 2× pixel dimensions during conversion. Setting a smaller AsciiDoc display width does not reduce download size.
+Crop unnecessary content before sacrificing readability. Commit the chosen image format without also adding an unused PNG
+duplicate. Files over 2 MB after optimization should be rare and justified by necessary detail.
 
 ## Version badges
 
@@ -110,11 +144,15 @@ A badge marks the product version that introduced a feature.
 // Shared attributes. Dot-prefixed so asciidoctor does not compile it as a page.
 :xp-version: 8.1
 :guillotine-version: 9
-:xp-docs: https://developer.enonic.com/docs/xp/stable
-:guillotine-docs: https://developer.enonic.com/docs/guillotine/stable
+:xp-docs: https://developer.enonic.com/docs/xp
+:xp-docs-version: stable
+:guillotine-docs: https://developer.enonic.com/docs/guillotine
+:guillotine-docs-version: stable
 ```
 
-Reference them as `{xp-version}` and `{xp-docs}/...`. Update the file, not the pages, when a version changes.
+Use `{xp-docs}[Enonic XP documentation]` for the package and `{xp-docs}/{xp-docs-version}/deep/path[Relevant topic]` for a deep
+link. Keep the base URL unversioned and the documentation version label separate from the product version (`{xp-version}`).
+Update the shared attributes, not individual pages, when a URL or version changes.
 
 ## Admonitions
 
@@ -123,8 +161,34 @@ Reference them as `{xp-version}` and `{xp-docs}/...`. Update the file, not the p
 
 ## Code examples and callouts
 
-Source blocks carry a language, such as `[source,typescript]`, `[source,yaml]`, `[source,json]`, or `[source,graphql]`. Give a
-block a filename or path as its `.Caption` when relevant; otherwise use a descriptive caption when the page has several blocks.
+Use lowercase language identifiers in `[source,language]`. Prefer full names such as `typescript` and `javascript` over aliases.
+Select the language of the snippet, not the product or tool it belongs to. Use normal product and language capitalization in
+prose, such as TypeScript, Java, and Gradle.
+
+| Content | Language identifier |
+|---------|---------------------|
+| TypeScript | `typescript` |
+| JavaScript | `javascript` |
+| Java | `java` |
+| Gradle Groovy DSL (`build.gradle`) | `groovy` |
+| Gradle Kotlin DSL (`build.gradle.kts`) | `kotlin` |
+| YAML | `yaml` |
+| JSON | `json` |
+| GraphQL | `graphql` |
+| File trees or plain output | `text` |
+
+Give a block a filename or path as its `.Caption` when relevant; otherwise use a descriptive caption when the page has several
+blocks. For example:
+
+```asciidoc
+.build.gradle
+[source,groovy]
+----
+dependencies {
+    include xplibs.scheduler
+}
+----
+```
 
 Use numbered callouts to connect specific lines in a code, configuration, or file-tree example to explanations below it.
 Use them when a few lines need explanation, such as a required setting, a naming constraint, or behavior that is not obvious

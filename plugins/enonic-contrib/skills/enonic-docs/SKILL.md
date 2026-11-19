@@ -278,7 +278,8 @@ Details, the `versions.json` and `menu.json` formats, how file paths map to URLs
 
 12. **Cross-link selectively; do not re-document other products.** Briefly summarize the concept and link to another
     documentation set, tutorial, or portal page only when the reader needs that destination. These cross-links create
-    maintenance dependencies; internal links within the current set are not subject to this restraint. The full guidance and
+    maintenance dependencies; internal links within the current set are not subject to this restraint. Omit the version for
+    package-level portal links (`/docs/code`); include it for deep links (`/docs/code/stable/deep/path`). The full guidance and
     standard targets are in `references/asciidoc-conventions.md`.
 
 13. **Version badges mark where a feature was introduced.** Place an inline badge image at the far left of the paragraph or list
@@ -304,14 +305,18 @@ Before finishing a change under `docs/`:
 - Every new or renamed page is in `docs/menu.json` with the `document` value equal to its path without `.adoc`.
 - No identifier, path or placeholder with an underscore sits in prose outside a `+...+` passthrough or a source block.
 - No link label ends in `^`.
-- Cross-links serve a reader need and match the documented version; internal navigation remains intact.
+- Cross-links serve a reader need: package URLs omit the version, deep links include the appropriate version, and internal
+  navigation remains intact.
 - Code callouts match their explanations and remain attached to the relevant tutorial step where applicable.
+- Source blocks use lowercase language identifiers for the snippet's language, following `references/asciidoc-conventions.md`.
 - Images referenced from the page exist at the paths resolved through its `:imagesdir:`.
+- Image alt text is at most 125 characters; screenshots have explicit pixel widths, with new captures at 2× display size.
+- Screenshots support the text; files over 1 MB are optimized, and files still over 2 MB are justified by necessary detail.
 - Assets reuse the shared directory or established locations; no unnecessary or empty asset directories are introduced.
 - Function and type tables follow the flat-table pattern.
 - Nothing under `docs/` is a stray non-documentation file that would be imported as media.
-- If versions are involved, `docs/versions.json` on the default branch lists the right refs and exactly one entry has
-  `"latest": true`.
+- If versions are involved, `docs/versions.json` on the default branch lists the right refs without an `origin/` prefix in
+  `checkout`, and exactly one entry has `"latest": true`.
 
 ## Repository layout
 

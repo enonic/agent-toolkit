@@ -68,7 +68,7 @@ Everything else under `docs/`, including images, PDFs, JSON files and any stray 
     },
     {
       "label": "stable",
-      "checkout": "origin/5.x",
+      "checkout": "5.x",
       "displayName": "5.x",
       "latest": true
     },
@@ -83,7 +83,7 @@ Everything else under `docs/`, including images, PDFs, JSON files and any stray 
 | Field         | Meaning                                                                                                             |
 |---------------|---------------------------------------------------------------------------------------------------------------------|
 | `label`       | Used in the URL path and the version dropdown. `stable` is conventional for the current release.                     |
-| `checkout`    | Any git ref: a branch (`origin/5.x`), a tag (`v4.2.0`) or a commit. The action runs with full history.               |
+| `checkout`    | A branch (`5.x`), a tag (`v4.2.0`) or a commit. Never prefix the value with `origin/`. The action runs with full history. |
 | `displayName` | Optional. Shown in the dropdown instead of the label; does not change the URL.                                       |
 | `latest`      | Exactly one version must have `true`. It is the default version shown, and the one used in site search.             |
 
@@ -97,7 +97,7 @@ ships: cut a branch for the outgoing major from the default branch, point `stabl
 in `versions.json` under its own label, and add the new branch to the workflow's `branches` list.
 
 A repository whose default branch is the current release and whose next major lives on a separate branch can invert this
-(`stable` on `master`, `next` on `origin/6.x`); the action does not care, only the default branch's `versions.json` does.
+(`stable` on `master`, `next` on `6.x`); the action does not care, only the default branch's `versions.json` does.
 
 ## `menu.json`
 

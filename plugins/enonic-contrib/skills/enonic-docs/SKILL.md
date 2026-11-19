@@ -128,6 +128,47 @@ tutorial" or "Guillotine reference".
 Tutorials belong in the Learn section, separate from reference documentation. The conventions below apply to tutorial material;
 do not bring their walkthrough structure into reference pages.
 
+### Naming and workspace isolation
+
+Give each tutorial a unique, stable slug containing only lowercase letters and digits, with no separators, such as `intro`,
+`dev101`, `nextjs`, or `reactspa`. Use the same slug unchanged in every resource name:
+
+| Resource | Naming convention | Example |
+|----------|-------------------|---------|
+| Sandbox | `tutorial_<slug>` | `tutorial_nextjs` |
+| Standalone Enonic source folder | `tutorial-<slug>-enonic` | `tutorial-nextjs-enonic` |
+| Separate frontend folder | `tutorial-<slug>-frontend` | `tutorial-nextjs-frontend` |
+| Deployed Enonic application ID | `com.example.tutorial.<slug>` | `com.example.tutorial.nextjs` |
+
+Sandbox names use an underscore after `tutorial` because the CLI does not accept hyphens in sandbox names. Choose a slug that
+identifies the tutorial's scope: use `reactspa` for the React SPA tutorial, distinguishing it from Next.js and React4XP tutorials.
+Its sandbox is `tutorial_reactspa` and its frontend folder is `tutorial-reactspa-frontend`. The slug does not need to match the
+source repository name or published URL; adopting it does not require renaming either.
+Use `enonic` for the source-folder suffix, rather than `app` or `xp`: the sources may contain only schemas or be part of a larger
+project. For monorepos or Enonic sources embedded within a frontend, follow the demonstrated project structure while keeping
+the sandbox and deployed application IDs unique. Do not create an Enonic source folder when the tutorial only uses installed apps.
+Keep supplied applications under their existing IDs, such as `com.enonic.app.intro`; assign tutorial IDs to applications the
+reader creates.
+
+Readers must be able to complete all tutorials from one shared workspace, such as `enonic-tutorials/`, without overwriting
+another tutorial's files or replacing its applications. Create standalone source folders as siblings in that workspace.
+Specify creation destinations explicitly; the Enonic CLI otherwise derives the folder from the last segment of the application
+ID. State the working directory when introducing commands or opening another terminal. For example, from the shared workspace:
+
+```sh
+enonic create com.example.tutorial.nextjs -r tutorial-intro -s tutorial_nextjs -d tutorial-nextjs-enonic
+```
+
+Give each independent tutorial its own sandbox to isolate content, configuration, and installed applications. Unique application
+IDs alone do not isolate sample content: starters can reuse a content-project ID such as `intro`. Sandboxes remain managed by
+the CLI, separately from the source workspace. Explain how to stop and resume the sandbox, source watchers, and frontend when
+switching tutorials. Distinct names do not prevent port conflicts; if simultaneous execution is required, document separate
+ports and the corresponding endpoint configuration.
+
+Store shared names in `docs/.variables.adoc` and reuse them in commands, configuration, and examples. When adopting these
+conventions in an existing tutorial, update its affected code, queries, and configuration together so the walkthrough remains
+consistent. Adopt them tutorial by tutorial; an unrelated documentation edit does not require renaming an existing tutorial.
+
 ### Perspective and instructions
 
 Address the reader consistently as "you" and use direct imperatives for steps: "Create a content type." Avoid switching to
@@ -297,6 +338,8 @@ Before finishing a change under `docs/`:
 - Menu labels are concise and align with descriptive page titles; tutorial chapter numbers appear only in the menu.
 - Menus normally have at most two levels; a third level has a clear grouping purpose, and deeper nesting is avoided.
 - The root `docs/index.adoc` is the first menu entry, labeled `Introduction` and unnumbered.
+- New or renamed tutorial resources follow the naming convention, coexist in one workspace, and use an isolated sandbox;
+  commands, queries, and configuration agree on their identifiers and working directories.
 - Tutorial tasks have action headings and numbered steps with bold action labels and an observable result.
 - Numbered chapters end with a summary and a link to the following chapter; the final chapter celebrates completion.
 - The page has a level-0 title (`= Title`), `:toc: right` where the page is long enough to need it, and `:imagesdir:` if it has
